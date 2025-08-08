@@ -14,21 +14,17 @@ class TestIGNFrance(BaseTestGeocoder):
             timeout=10
         )
 
-    async def test_invalid_query_type(self):
-        with pytest.raises(GeocoderQueryError):
-            self.geocoder.geocode("44109000EX0114", query_type="invalid")
+    async def test_user_agent_custom(self):
+        geocoder = BANFrance(
+            user_agent='my_user_agent/1.0'
+        )
+        assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
 
-    async def test_invalid_query_parcel(self):
-        with pytest.raises(GeocoderQueryError):
-            self.geocoder.geocode(
-                "incorrect length string",
-                query_type="CadastralParcel",
-            )
 
-    async def test_geocode(self):
+    async def test_geocode_parcel(self):
         await self.geocode_run(
             {"query": "44109000EX0114",
-             "query_type": "CadastralParcel"},
+             "index": "parcel"},
             {"latitude": 47.222482, "longitude": -1.556303},
         )
 
@@ -49,32 +45,64 @@ class TestIGNFrance(BaseTestGeocoder):
 
     async def test_geocode_with_address(self):
         await self.geocode_run(
-            {"query": "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER",
-             "query_type": "StreetAddress"},
+            {"query": "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER"},
             {"latitude": 47.293048,
              "longitude": 1.718985,
-             "address": "le camp des landes, 41200 Villefranche-sur-Cher"},
+             "address": "Le Camp des Landes 41200 Villefranche-sur-Cher"},
         )
 
-    async def test_geocode_freeform(self):
+    async def test_geocode_with_address_index(self):
         await self.geocode_run(
-            {"query": "8 rue Général Buat, Nantes",
-             "query_type": "StreetAddress",
-             "is_freeform": True},
-            {"address": "8 r general buat , 44000 Nantes"},
+            {"query": "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER",
+             "index": "address"},
+            {"latitude": 47.293048,
+             "longitude": 1.718985,
+             "address": "Le Camp des Landes 41200 Villefranche-sur-Cher"},
         )
 
-    async def test_geocode_position_of_interest(self):
+    async def test_geocode_with_poi1(self):
+        """Tests the presidential palais (stable location). Expected result 
+        does contain the postcode and city"""
+        await self.geocode_run(
+            {"query": "Elysée, Paris",
+             "index": "poi"},
+            {"latitude": 48.86931,
+             "longitude": 2.316138,
+             "address": "Palais de l'Élysée 75008 Paris"},
+        )
+
+    async def test_geocode_with_poi2(self):
+        """tests a port (stable location, but the name might change later)
+        Expected result does not contain the city"""
+        await self.geocode_run(
+            {"query": "port de dunkerque",
+             "index": "poi"},
+            {"latitude": 51.061641,
+             "longitude": 2.348728,
+             "address": "Rade de Dunkerque"},
+        )
+
+    async def test_geocode_poi_multiple_results5(self):
+        """test the respect of limit"""
         res = await self.geocode_run(
-            {"query": "Chambéry",
-             "query_type": "PositionOfInterest",
+            {"query": "plage Marseille",
+             "index": "poi",
+             "limit": 5,
              "exactly_one": False},
             {},
         )
+        assert len(res) == 5
 
-        addresses = [location.address for location in res]
-        assert "02000 Chambry" in addresses
-        assert "16420 Saint-Christophe" in addresses
+    async def test_geocode_poi_multiple_results3(self):
+        """test the respect of limit"""
+        res = await self.geocode_run(
+            {"query": "plage Marseille",
+             "index": "poi",
+             "limit": 3,
+             "exactly_one": False},
+            {},
+        )
+        assert len(res) == 3
 
     async def test_geocode_filter_by_attribute(self):
         res = await self.geocode_run(
