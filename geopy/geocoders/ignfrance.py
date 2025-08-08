@@ -121,6 +121,7 @@ class IGNFrance(Geocoder):
             *,
             limit=None,
             index='address',
+            type=None,
             exactly_one=True,
             timeout=DEFAULT_SENTINEL
     ):
@@ -139,6 +140,9 @@ class IGNFrance(Geocoder):
             parcel, `poi` for point of interest. You can also combine them
             with a comma.
             Default is set to `address`.
+
+        :param str type: The type to use for address index. Can be `housenumber`,
+            `street`, `locality`, `municipality`
 
         :param bool exactly_one: Return one result or a list of results, if
             available.
@@ -170,10 +174,14 @@ class IGNFrance(Geocoder):
                 )
             params['index'] = ','.join(indexes)
 
+        if type is not None:
+            if type not in {'housenumber', 'street', 'locality', 'municipality'}:
+                raise GeocoderQueryError("invalid type %s")
+            params['type'] = type
+    
         url = "?".join((self.geocode_api, urlencode(params)))
 
         logger.debug("%s.geocode: %s", self.__class__.__name__, url)
-        print("calling with exactly_one=%s" % (exactly_one))
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
 

@@ -82,6 +82,52 @@ class TestIGNFrance(BaseTestGeocoder):
              "address": "Rade de Dunkerque"},
         )
 
+    async def test_geocode_with_type_housenumber(self):
+        """tests the type parameter housenumber"""
+        res = await self.geocode_run(
+            {"query": "13 Rue de la Paix, 75002 Paris, France",
+             "index": "address",
+             "type": "housenumber"},
+            {},
+        )
+        assert res.raw.get('type') == 'Feature'
+        assert res.raw.get('properties').get('type') == 'housenumber'
+        assert int(res.raw.get('properties').get('housenumber')) == 13
+        
+    async def test_geocode_with_type_street(self):
+        """tests the type parameter street"""
+        res = await self.geocode_run(
+            {"query": "13 Rue de la Paix, 75002 Paris, France",
+             "index": "address",
+             "type": "street"},
+            {},
+        )
+        assert res.raw.get('type') == 'Feature'
+        assert res.raw.get('properties').get('type') == 'street'
+        
+    async def test_geocode_with_type_locality(self):
+        """tests the type parameter street"""
+        res = await self.geocode_run(
+            {"query": "Paris, France",
+             "index": "address",
+             "type": "locality"},
+            {},
+        )
+        print(res)
+        assert res.raw.get('type') == 'Feature'
+        assert res.raw.get('properties').get('type') == 'locality'
+
+    async def test_geocode_with_type_municipality(self):
+        """tests the type parameter street"""
+        res = await self.geocode_run(
+            {"query": "Paris, France",
+             "index": "address",
+             "type": "municipality"},
+            {},
+        )
+        assert res.raw.get('type') == 'Feature'
+        assert res.raw.get('properties').get('type') == 'municipality'
+
     async def test_geocode_poi_multiple_results5(self):
         """test the respect of limit"""
         res = await self.geocode_run(
