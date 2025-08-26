@@ -19,6 +19,7 @@ class TestBing(BaseTestGeocoder):
     def make_geocoder(cls, **kwargs):
         return Bing(
             api_key=env['BING_KEY'],
+            cache=False,
             **kwargs
         )
 

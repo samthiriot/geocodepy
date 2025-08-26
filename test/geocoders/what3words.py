@@ -91,6 +91,7 @@ class TestWhat3Words(BaseTestWhat3Words):
         return What3Words(
             env['WHAT3WORDS_KEY'],
             timeout=3,
+            cache=False,
             **kwargs
         )
 
@@ -107,5 +108,6 @@ class TestWhat3WordsV3(BaseTestWhat3Words):
         return What3WordsV3(
             env['WHAT3WORDS_KEY'],
             timeout=3,
+            cache=False,
             **kwargs
         )

@@ -189,6 +189,7 @@ class TestHereApiKey(BaseTestHere):
         return Here(
             apikey=env['HERE_APIKEY'],
             timeout=10,
+            cache=False,
             **kwargs
         )
 
@@ -202,6 +203,7 @@ class TestHereLegacyAuth(BaseTestHere):
                 app_id=env['HERE_APP_ID'],
                 app_code=env['HERE_APP_CODE'],
                 timeout=10,
+                cache=False,
                 **kwargs
             )
         assert len(w) == 1
@@ -212,7 +214,7 @@ class TestHereV7(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return HereV7(env['HERE_APIKEY'], **kwargs)
+        return HereV7(env['HERE_APIKEY'], cache=False, **kwargs)
 
     async def test_geocode_empty_result(self):
         await self.geocode_run(

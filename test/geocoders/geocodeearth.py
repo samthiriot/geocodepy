@@ -8,4 +8,4 @@ class TestGeocodeEarth(BaseTestPelias):
     @classmethod
     def make_geocoder(cls, **kwargs):
         return GeocodeEarth(env['GEOCODEEARTH_KEY'],
-                            **kwargs)
+                            cache=False, **kwargs)

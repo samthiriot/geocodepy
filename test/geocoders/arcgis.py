@@ -19,7 +19,7 @@ class TestArcGIS(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return ArcGIS(timeout=3, **kwargs)
+        return ArcGIS(timeout=3, cache=False, **kwargs)
 
     async def test_missing_password_error(self):
         with pytest.raises(exc.ConfigurationError):
@@ -94,6 +94,7 @@ class TestArcGISAuthenticated(BaseTestGeocoder):
             password=env['ARCGIS_PASSWORD'],
             referer=env['ARCGIS_REFERER'],
             timeout=3,
+            cache=False,
             **kwargs
         )
 

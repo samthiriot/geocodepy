@@ -30,7 +30,7 @@ class TestGeoNames(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return GeoNames(username=env['GEONAMES_USERNAME'], **kwargs)
+        return GeoNames(username=env['GEONAMES_USERNAME'], cache=False, **kwargs)
 
     async def test_geocode(self):
         await self.geocode_run(

@@ -6,11 +6,12 @@ class TestBANFrance(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return BANFrance(timeout=10, **kwargs)
+        return BANFrance(timeout=10, cache=False, **kwargs)
 
     async def test_user_agent_custom(self):
         geocoder = BANFrance(
-            user_agent='my_user_agent/1.0'
+            user_agent='my_user_agent/1.0',
+            cache=False
         )
         assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
 

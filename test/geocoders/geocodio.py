@@ -10,7 +10,7 @@ class TestGeocodio(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return Geocodio(api_key=env['GEOCODIO_KEY'], **kwargs)
+        return Geocodio(api_key=env['GEOCODIO_KEY'], cache=False, **kwargs)
 
     async def test_user_agent_custom(self):
         geocoder = self.make_geocoder(user_agent='my_user_agent/1.0')

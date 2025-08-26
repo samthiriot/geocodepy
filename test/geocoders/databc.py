@@ -9,7 +9,7 @@ class TestDataBC(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return DataBC(**kwargs)
+        return DataBC(cache=False, **kwargs)
 
     async def test_user_agent_custom(self):
         geocoder = DataBC(

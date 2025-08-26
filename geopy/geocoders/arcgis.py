@@ -44,7 +44,9 @@ class ArcGIS(Geocoder):
             ssl_context=DEFAULT_SENTINEL,
             adapter_factory=None,
             auth_domain='www.arcgis.com',
-            domain='geocode.arcgis.com'
+            domain='geocode.arcgis.com',
+            cache=None,
+            cache_expire=None
     ):
         """
 
@@ -91,6 +93,18 @@ class ArcGIS(Geocoder):
 
         :param str domain: Domain where the target ArcGIS service
             is hosted.
+
+        :param bool cache:
+            Either True or None to activate cache, or False to disable it.
+            Default is None. 
+            If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
+
+        :param int cache_expire:
+            Time, in seconds, to keep a cached result in memory. 
+            Enables to query again the geocoder in case its database, or algorithm, has changed.
+            Default is 30 days.
+        
+            .. versionadded:: 2.0
         """
         super().__init__(
             scheme=scheme,
@@ -99,6 +113,8 @@ class ArcGIS(Geocoder):
             user_agent=user_agent,
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
+            cache=cache,
+            cache_expire=cache_expire
         )
         if username or password or referer:
             if not (username and password and referer):

@@ -25,6 +25,18 @@ from geopy.exc import (
 from geopy.point import Point
 from geopy.util import __version__, logger
 
+
+try:
+    from diskcache import Cache
+    import os
+    from tempfile import gettempdir
+    diskcache_available = True
+except ImportError:
+    diskcache_available = False
+
+# the role of cache expiration is to reflect the fact databases of geocoders can be updated.
+_DEFAULT_CACHE_EXPIRE = 60*60*24*30 # 30 days
+
 __all__ = (
     "Geocoder",
     "options",
@@ -37,7 +49,6 @@ _DEFAULT_ADAPTER_CLASS = next(
     for adapter_cls in (RequestsAdapter, URLLibAdapter,)
     if adapter_cls.is_available
 )
-
 
 class options:
     """The `options` object contains default configuration values for
@@ -166,6 +177,11 @@ class options:
 
         default_user_agent
             User-Agent header to send with the requests to geocoder API.
+
+        default_cache_expire
+            Time, in seconds, to keep a cached result in memory. 
+            Enables to query again the geocoder in case its database, or algorithm, has changed.
+            Default is 30 days.
     """
 
     # Please keep the attributes sorted (Sphinx sorts them in the rendered
@@ -185,7 +201,8 @@ class options:
     default_ssl_context = None
     default_timeout = 1
     default_user_agent = _DEFAULT_USER_AGENT
-
+    default_cache = True
+    default_cache_expire = _DEFAULT_CACHE_EXPIRE
 
 # Create an object which `repr` returns 'DEFAULT_SENTINEL'. Sphinx (docs) uses
 # this value when generating method's signature.
@@ -224,7 +241,9 @@ class Geocoder:
             proxies=DEFAULT_SENTINEL,
             user_agent=None,
             ssl_context=DEFAULT_SENTINEL,
-            adapter_factory=None
+            adapter_factory=None,
+            cache=None,
+            cache_expire=None
     ):
         self.scheme = scheme or options.default_scheme
         if self.scheme not in ('http', 'https'):
@@ -257,6 +276,25 @@ class Geocoder:
                 "Adapter %r must extend either BaseSyncAdapter or BaseAsyncAdapter"
                 % (type(self.adapter),)
             )
+        
+        self.cache = None
+        if diskcache_available:
+            if isinstance(cache, Cache):
+                self.cache = cache
+            elif cache is None or cache is True:
+                path = os.path.join(gettempdir(), "geocodepy", "cache", self.__class__.__name__)
+                print("allocating a cache for", self.__class__.__name__, "in", path)
+                self.cache = Cache(path, eviction_policy='least-frequently-used', statistics=True)
+            if self.cache is not None:
+                # invalidate cached results at init, to save space and get quicker results
+                self.cache.expire()
+            self.cache_expire = options.default_cache_expire if cache_expire is None else int(cache_expire)
+        elif cache is not None:
+            raise ConfigurationError("please install diskcache to activate cache")
+
+    def clear_cache(self):
+        if self.cache is not None:
+            self.cache.clear()
 
     def __enter__(self):
         """Context manager for synchronous adapters. At exit all
@@ -360,20 +398,27 @@ class Geocoder:
         if headers:
             req_headers.update(headers)
 
+        print("headers:", req_headers)
+        print("url:", url)
+
         timeout = (timeout if timeout is not DEFAULT_SENTINEL
                    else self.timeout)
 
         try:
-            if is_json:
-                result = self.adapter.get_json(url, timeout=timeout, headers=req_headers)
-            else:
-                result = self.adapter.get_text(url, timeout=timeout, headers=req_headers)
+            result = self.cache.get(url, None) if self.cache is not None else None
+            if result is None :
+                if is_json:
+                    result = self.adapter.get_json(url, timeout=timeout, headers=req_headers)
+                else:
+                    result = self.adapter.get_text(url, timeout=timeout, headers=req_headers)
             if self.__run_async:
                 async def fut():
                     try:
                         res = callback(await result)
                         if inspect.isawaitable(res):
                             res = await res
+                        if self.cache is not None:
+                            self.cache.set(url, result, expire=self.cache_expire)
                         return res
                     except Exception as error:
                         res = self._adapter_error_handler(error)
@@ -383,6 +428,8 @@ class Geocoder:
 
                 return fut()
             else:
+                if self.cache is not None:
+                    self.cache.set(url, result, expire=self.cache_expire)
                 return callback(result)
         except Exception as error:
             res = self._adapter_error_handler(error)
@@ -414,11 +461,21 @@ class Geocoder:
             if res is NONE_RESULT:
                 return NONE_RESULT
 
+    def __del__(self):
+        if self.cache is not None:
+            try:
+                hits, misses = self.cache.stats(enable=False, reset=True)
+                print("closing cache for", self.__class__.__name__, hits, "hits,", misses, "misses")
+                self.cache.expire()
+            finally:
+                self.cache.close()
+
     # def geocode(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
     #     raise NotImplementedError()
 
     # def reverse(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
     #     raise NotImplementedError()
+
 
 
 def _format_coordinate(coordinate):

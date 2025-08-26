@@ -18,4 +18,4 @@ class TestOpenMapQuest(BaseTestNominatim):
     @classmethod
     def make_geocoder(cls, **kwargs):
         return OpenMapQuest(api_key=env['OPENMAPQUEST_APIKEY'],
-                            timeout=3, **kwargs)
+                            timeout=3, cache=False, **kwargs)

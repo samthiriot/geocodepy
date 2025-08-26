@@ -11,7 +11,8 @@ class TestIGNFrance(BaseTestGeocoder):
     @classmethod
     def make_geocoder(cls, **kwargs):
         return IGNFrance(
-            timeout=10
+            timeout=10,
+            cache=False
         )
 
     async def test_user_agent_custom(self):
@@ -200,6 +201,7 @@ class TestIGNFranceUsernameAuthProxy(BaseTestGeocoder):
     def make_geocoder(cls, **kwargs):
         return IGNFrance(
             timeout=10,
+            cache=False,
             **kwargs
         )
 

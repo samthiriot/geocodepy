@@ -61,6 +61,7 @@ class GeocoderTestCase(unittest.TestCase):
             user_agent=user_agent,
             ssl_context=ssl_context,
             adapter_factory=lambda **kw: adapter,
+            cache=False
         )
         for attr in ('scheme', 'timeout', 'proxies', 'ssl_context'):
             assert locals()[attr] == getattr(geocoder, attr)
@@ -77,7 +78,7 @@ class GeocoderTestCase(unittest.TestCase):
             'ssl_context': 'default_ssl_context',
         }
 
-        geocoder = Geocoder()
+        geocoder = Geocoder(cache=False)
         for geocoder_attr, options_attr in attr_to_option.items():
             assert (
                 getattr(geopy.geocoders.options, options_attr) ==
@@ -94,7 +95,7 @@ class GeocoderTestCase(unittest.TestCase):
     @patch.object(geopy.geocoders.options, 'default_ssl_context',
                   sentinel.some_ssl_context)
     def test_init_with_none_overrides_default(self):
-        geocoder = Geocoder(proxies=None, timeout=None, ssl_context=None)
+        geocoder = Geocoder(proxies=None, timeout=None, ssl_context=None, cache=False)
         assert geocoder.proxies is None
         assert geocoder.timeout is None
         assert geocoder.ssl_context is None
@@ -102,12 +103,13 @@ class GeocoderTestCase(unittest.TestCase):
     @patch.object(geopy.geocoders.options, 'default_user_agent',
                   'mocked_user_agent/0.0.0')
     def test_user_agent_default(self):
-        geocoder = Geocoder()
+        geocoder = Geocoder(cache=False)
         assert geocoder.headers['User-Agent'] == 'mocked_user_agent/0.0.0'
 
     def test_user_agent_custom(self):
         geocoder = Geocoder(
-            user_agent='my_user_agent/1.0'
+            user_agent='my_user_agent/1.0',
+            cache=False
         )
         assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
 
@@ -115,7 +117,7 @@ class GeocoderTestCase(unittest.TestCase):
     def test_call_geocoder_timeout(self):
         url = 'spam://ham/eggs'
 
-        g = Geocoder(adapter_factory=DummySyncAdapter)
+        g = Geocoder(adapter_factory=DummySyncAdapter, cache=False)
         assert g.timeout == 12
 
         with ExitStack() as stack:
@@ -144,7 +146,7 @@ class GeocoderTestCase(unittest.TestCase):
             )
 
             for ssl_context in (None, sentinel.some_ssl_context):
-                Geocoder(ssl_context=ssl_context)
+                Geocoder(ssl_context=ssl_context, cache=False)
                 args, kwargs = mock_adapter.call_args
                 assert kwargs['ssl_context'] is ssl_context
 
@@ -155,7 +157,7 @@ class GeocoderPointCoercionTestCase(unittest.TestCase):
     coordinates_address = "175 5th Avenue, NYC, USA"
 
     def setUp(self):
-        self.method = Geocoder()._coerce_point_to_string
+        self.method = Geocoder(cache=False)._coerce_point_to_string
 
     def test_point(self):
         latlon = self.method(Point(*self.coordinates))
@@ -191,7 +193,7 @@ class GeocoderPointCoercionTestCase(unittest.TestCase):
 class GeocoderFormatBoundingBoxTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.method = Geocoder()._format_bounding_box
+        self.method = Geocoder(cache=False)._format_bounding_box
 
     def test_string_raises(self):
         with pytest.raises(GeocoderQueryError):
@@ -237,7 +239,7 @@ class GeocoderFormatBoundingBoxTestCase(unittest.TestCase):
 
 @pytest.mark.parametrize("adapter_factory", [DummySyncAdapter, DummyAsyncAdapter])
 async def test_synchronize_decorator_sync_simple(adapter_factory):
-    geocoder = Geocoder(adapter_factory=adapter_factory)
+    geocoder = Geocoder(adapter_factory=adapter_factory, cache=False)
     calls = []
 
     @_synchronized
@@ -253,7 +255,7 @@ async def test_synchronize_decorator_sync_simple(adapter_factory):
 
 
 async def test_synchronize_decorator_async_simple():
-    geocoder = Geocoder(adapter_factory=DummyAsyncAdapter)
+    geocoder = Geocoder(adapter_factory=DummyAsyncAdapter, cache=False)
     calls = []
 
     @_synchronized
@@ -269,7 +271,7 @@ async def test_synchronize_decorator_async_simple():
 
 @pytest.mark.parametrize("adapter_factory", [DummySyncAdapter, DummyAsyncAdapter])
 async def test_synchronize_decorator_sync_exception(adapter_factory):
-    geocoder = Geocoder(adapter_factory=adapter_factory)
+    geocoder = Geocoder(adapter_factory=adapter_factory, cache=False)
 
     @_synchronized
     def f(self, one, *, two):
@@ -282,7 +284,7 @@ async def test_synchronize_decorator_sync_exception(adapter_factory):
 
 
 async def test_synchronize_decorator_async_exception():
-    geocoder = Geocoder(adapter_factory=DummyAsyncAdapter)
+    geocoder = Geocoder(adapter_factory=DummyAsyncAdapter, cache=False)
 
     @_synchronized
     def f(self, one, *, two):

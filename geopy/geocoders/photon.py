@@ -36,7 +36,9 @@ class Photon(Geocoder):
             domain='photon.komoot.io',
             user_agent=None,
             ssl_context=DEFAULT_SENTINEL,
-            adapter_factory=None
+            adapter_factory=None,
+            cache=None,
+            cache_expire=None
     ):
         """
 
@@ -64,6 +66,18 @@ class Photon(Geocoder):
             See :attr:`geopy.geocoders.options.default_adapter_factory`.
 
             .. versionadded:: 2.0
+
+        :param bool cache:
+            Either True or None to activate cache, or False to disable it.
+            Default is None. 
+            If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
+
+        :param int cache_expire:
+            Time, in seconds, to keep a cached result in memory. 
+            Enables to query again the geocoder in case its database, or algorithm, has changed.
+            Default is 30 days.
+        
+            .. versionadded:: 2.0
         """
         super().__init__(
             scheme=scheme,
@@ -72,6 +86,8 @@ class Photon(Geocoder):
             user_agent=user_agent,
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
+            cache=cache,
+            cache_expire=cache_expire
         )
         self.domain = domain.strip('/')
         self.api = "%s://%s%s" % (self.scheme, self.domain, self.geocode_path)

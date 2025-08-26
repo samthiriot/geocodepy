@@ -34,7 +34,9 @@ class IGNFrance(Geocoder):
             proxies=DEFAULT_SENTINEL,
             user_agent=None,
             ssl_context=DEFAULT_SENTINEL,
-            adapter_factory=None
+            adapter_factory=None,
+            cache=None,
+            cache_expire=None
     ):
         """
 
@@ -83,6 +85,16 @@ class IGNFrance(Geocoder):
         :param callable adapter_factory:
             See :attr:`geopy.geocoders.options.default_adapter_factory`.
 
+        :param bool cache:
+            Either True or None to activate cache, or False to disable it.
+            Default is None. 
+            If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
+
+        :param int cache_expire:
+            Time, in seconds, to keep a cached result in memory. 
+            Enables to query again the geocoder in case its database, or algorithm, has changed.
+            Default is 30 days.
+        
             .. versionadded:: 2.0
         """  # noqa
         
@@ -93,6 +105,8 @@ class IGNFrance(Geocoder):
             user_agent=user_agent,
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
+            cache=cache,
+            cache_expire=cache_expire
         )
 
         if api_key or username or password or referer:
@@ -132,7 +146,6 @@ class IGNFrance(Geocoder):
         :param int limit: Defines the maximum number of items in the
             response structure. If not provided and there are multiple
             results the BAN API will return 10 results by default.
-            This will be reset to one if ``exactly_one`` is True.
 
         :param str index: The index to use for the geocoding.
             It can be `address` for postal address, `parcel` for cadastral 
@@ -195,10 +208,6 @@ class IGNFrance(Geocoder):
         :type query: :class:`geopy.point.Point`, list or tuple of ``(latitude,
             longitude)``, or string as ``"%(latitude)s, %(longitude)s"``.
 
-        :param list reverse_geocode_preference: Enable to set expected results
-            type. It can be `StreetAddress` or `PositionOfInterest`.
-            Default is set to `StreetAddress`.
-
         :param str index: The index to use for the geocoding.
             It can be `address` for postal address, `parcel` for cadastral 
             parcel, `poi` for point of interest. You can also combine them
@@ -211,11 +220,6 @@ class IGNFrance(Geocoder):
         :param int limit: Defines the maximum number of items in the
             response structure. If not provided and there are multiple
             results the BAN API will return 10 results by default.
-            This will be reset to one if ``exactly_one`` is True.
-
-        :param str filtering: Provide string that help setting geocoder
-            filter. It contains an XML string. See examples in documentation
-            and ignfrance.py file in directory tests.
 
         :param bool exactly_one: Return one result or a list of results, if
             available.

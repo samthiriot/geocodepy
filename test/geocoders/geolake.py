@@ -19,6 +19,7 @@ class TestGeolake(BaseTestGeocoder):
         return Geolake(
             api_key=env['GEOLAKE_KEY'],
             timeout=10,
+            cache=False,
             **kwargs
         )
 

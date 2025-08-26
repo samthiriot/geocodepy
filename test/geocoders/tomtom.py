@@ -47,4 +47,4 @@ class TestTomTom(BaseTestTomTom):
     @classmethod
     def make_geocoder(cls, **kwargs):
         return TomTom(env['TOMTOM_KEY'], timeout=3,
-                      **kwargs)
+                      cache=False, **kwargs)

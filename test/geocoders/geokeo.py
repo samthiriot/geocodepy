@@ -22,6 +22,7 @@ class TestGeokeo(BaseTestGeocoder):
         return Geokeo(
             api_key=env['GEOKEY_KEY'],
             timeout=10,
+            cache=False,
             **kwargs
         )
 
