@@ -30,11 +30,12 @@ try:
     from diskcache import Cache
     import os
     from tempfile import gettempdir
-    # the role of cache expiration is to reflect the fact databases of geocoders can be updated.
-    _DEFAULT_CACHE_EXPIRE = 60*60*24*30 # 30 days
     diskcache_available = True
 except ImportError:
     diskcache_available = False
+
+# the role of cache expiration is to reflect the fact databases of geocoders can be updated.
+_DEFAULT_CACHE_EXPIRE = 60*60*24*30 # 30 days
 
 __all__ = (
     "Geocoder",
