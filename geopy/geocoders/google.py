@@ -100,7 +100,7 @@ class GoogleV3(Geocoder):
 
         :param str channel: If using premier, the channel identifier.
 
-        :param cache:
+        :param bool cache:
             Either True or None to activate cache, or False to disable it.
             Default is None. 
             If a a :class:`diskcache.Cache` instance is passed, it will be used as is.

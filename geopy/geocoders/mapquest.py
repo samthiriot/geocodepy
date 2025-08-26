@@ -67,7 +67,7 @@ class MapQuest(Geocoder):
 
         :param str domain: base api domain for mapquest
 
-        :param cache:
+        :param bool cache:
             Either True or None to activate cache, or False to disable it.
             Default is None. 
             If a a :class:`diskcache.Cache` instance is passed, it will be used as is.

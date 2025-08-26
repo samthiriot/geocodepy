@@ -110,7 +110,7 @@ class Here(Geocoder):
 
             .. versionadded:: 2.0
 
-        :param cache:
+        :param bool cache:
             Either True or None to activate cache, or False to disable it.
             Default is None. 
             If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
@@ -468,7 +468,7 @@ class HereV7(Geocoder):
 
             .. versionadded:: 2.4
 
-        :param cache:
+        :param bool cache:
             Either True or None to activate cache, or False to disable it.
             Default is None. 
             If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
