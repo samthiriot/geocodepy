@@ -27,7 +27,9 @@ class BANFrance(Geocoder):
             proxies=DEFAULT_SENTINEL,
             user_agent=None,
             ssl_context=DEFAULT_SENTINEL,
-            adapter_factory=None
+            adapter_factory=None,
+            cache=None,
+            cache_expire=None
     ):
         """
 
@@ -53,6 +55,16 @@ class BANFrance(Geocoder):
         :param callable adapter_factory:
             See :attr:`geopy.geocoders.options.default_adapter_factory`.
 
+        :param cache:
+            Either True or None to activate cache, or False to disable it.
+            Default is None. 
+            If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
+
+        :param int cache_expire:
+            Time, in seconds, to keep a cached result in memory. 
+            Enables to query again the geocoder in case its database, or algorithm, has changed.
+            Default is 30 days.
+
             .. versionadded:: 2.0
 
         """
@@ -63,6 +75,8 @@ class BANFrance(Geocoder):
             user_agent=user_agent,
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
+            cache=cache,
+            cache_expire=cache_expire
         )
         self.domain = domain.strip('/')
 
@@ -165,6 +179,7 @@ class BANFrance(Geocoder):
         latitude = feature.get('geometry', {}).get('coordinates', [])[1]
         longitude = feature.get('geometry', {}).get('coordinates', [])[0]
         placename = feature.get('properties', {}).get('label')
+        postcode = feature.get('properties', {}).get('postcode')
 
         return Location(placename, (latitude, longitude), feature)
 
