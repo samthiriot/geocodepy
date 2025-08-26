@@ -48,5 +48,6 @@ setup(
             # vendored version of urllib3 (see note above)
         ],
         "timezone": ["pytz"],
+        "diskcache": ["diskcache>=5.6.3"],
     },
 )
