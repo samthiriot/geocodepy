@@ -15,7 +15,7 @@ class TestIGNFrance(BaseTestGeocoder):
         )
 
     async def test_user_agent_custom(self):
-        geocoder = BANFrance(
+        geocoder = IGNFrance(
             user_agent='my_user_agent/1.0'
         )
         assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
@@ -150,126 +150,48 @@ class TestIGNFrance(BaseTestGeocoder):
         )
         assert len(res) == 3
 
-    async def test_geocode_filter_by_attribute(self):
-        res = await self.geocode_run(
-            {"query": "Les Molettes",
-             "query_type": "PositionOfInterest",
-             "maximum_responses": 10,
-             "filtering": '<Place type="Departement">38</Place>',
-             "exactly_one": False},
-            {},
-        )
-
-        departements = [location.raw['departement'] for location in res]
-        unique = list(set(departements))
-
-        assert len(unique) == 1
-        assert unique[0] == "38"
-
-    async def test_geocode_filter_by_envelope(self):
-        lat_min, lng_min, lat_max, lng_max = 45.00, 5, 46, 6.40
-
-        spatial_filtering_envelope = """
-        <gml:envelope>
-            <gml:pos>{lat_min} {lng_min}</gml:pos>
-            <gml:pos>{lat_max} {lng_max}</gml:pos>
-        </gml:envelope>
-        """.format(
-            lat_min=lat_min,
-            lng_min=lng_min,
-            lat_max=lat_max,
-            lng_max=lng_max
-        )
-
-        res_spatial_filter = await self.geocode_run(
-            {"query": 'Les Molettes',
-             "query_type": 'PositionOfInterest',
-             "maximum_responses": 10,
-             "filtering": spatial_filtering_envelope,
-             "exactly_one": False},
-            {},
-        )
-
-        departements_spatial = list(
-            {i.raw['departement'] for i in res_spatial_filter}
-        )
-
-        res_no_spatial_filter = await self.geocode_run(
-            {"query": 'Les Molettes',
-             "query_type": 'PositionOfInterest',
-             "maximum_responses": 10,
-             "exactly_one": False},
-            {},
-        )
-
-        departements_no_spatial = list(
-            {
-                i.raw['departement']
-                for i in res_no_spatial_filter
-            }
-        )
-
-        assert len(departements_no_spatial) > len(departements_spatial)
-
-    async def test_reverse(self):
+    async def test_reverse_default(self):
         res = await self.reverse_run(
-            {"query": '47.229554,-1.541519'},
+            {"query": '48.86931,2.316138'},
             {},
         )
-        assert res.address == '7 av camille guerin, 44000 Nantes'
+        assert res.address == '9 Rue de l\'Elysée 75008 Paris'
+
+    async def test_reverse_index_address(self):
+        res = await self.reverse_run(
+            {"query": '48.86931,2.316138', "index": "address"},
+            {},
+        )
+        assert res.address == '9 Rue de l\'Elysée 75008 Paris'
+
+    async def test_reverse_index_address_type_housenumber(self):
+        res = await self.reverse_run(
+            {"query": '48.86931,2.316138', "index": "address", "type": "housenumber"},
+            {},
+        )
+        assert res.address == '9 Rue de l\'Elysée 75008 Paris'
+
+    async def test_reverse_index_address_type_street(self):
+        res = await self.reverse_run(
+            {"query": '48.86931,2.316138', "index": "address", "type": "street"},
+            {},
+        )
+        assert res.address == 'Rue de l\'Elysée 75008 Paris,Paris 8e Arrondissement'
+
+    async def test_reverse_index_poi(self):
+        res = await self.reverse_run(
+            {"query": '48.86931,2.316138', "index": "poi"},
+            {},
+        )
+        assert res.address == 'Palais de l\'Élysée 75008 Paris'
+
 
     async def test_reverse_invalid_preference(self):
         with pytest.raises(GeocoderQueryError):
             self.geocoder.reverse(
                 query='47.229554,-1.541519',
-                reverse_geocode_preference=['a']  # invalid
+                index='a'  # invalid
             )
-
-    async def test_reverse_preference(self):
-        res = await self.reverse_run(
-            {"query": '47.229554,-1.541519',
-             "exactly_one": False,
-             "reverse_geocode_preference": ['StreetAddress', 'PositionOfInterest']},
-            {},
-        )
-        addresses = [location.address for location in res]
-        assert "3 av camille guerin, 44000 Nantes" in addresses
-        assert "5 av camille guerin, 44000 Nantes" in addresses
-
-    async def test_reverse_by_radius(self):
-        spatial_filtering_radius = """
-        <gml:CircleByCenterPoint>
-            <gml:pos>{coord}</gml:pos>
-            <gml:radius>{radius}</gml:radius>
-        </gml:CircleByCenterPoint>
-        """.format(coord='48.8033333 2.3241667', radius='50')
-
-        res_call_radius = await self.reverse_run(
-            {"query": '48.8033333,2.3241667',
-             "exactly_one": False,
-             "maximum_responses": 10,
-             "filtering": spatial_filtering_radius},
-            {},
-        )
-
-        res_call = await self.reverse_run(
-            {"query": '48.8033333,2.3241667',
-             "exactly_one": False,
-             "maximum_responses": 10},
-            {},
-        )
-
-        coordinates_couples_radius = {
-            (str(location.latitude) + ' ' + str(location.longitude))
-            for location in res_call_radius
-        }
-        coordinates_couples = {
-            (str(location.latitude) + ' ' + str(location.longitude))
-            for location in res_call
-        }
-
-        assert coordinates_couples_radius.issubset(coordinates_couples)
-
 
 class TestIGNFranceUsernameAuthProxy(BaseTestGeocoder):
     proxy_timeout = 5
@@ -295,10 +217,10 @@ class TestIGNFranceUsernameAuthProxy(BaseTestGeocoder):
     async def test_proxy_is_respected(self):
         assert 0 == len(self.proxy_server.requests)
         await self.geocode_run(
-            {"query": "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER",
-             "query_type": "StreetAddress"},
-            {"latitude": 47.293048,
-             "longitude": 1.718985,
-             "address": "le camp des landes, 41200 Villefranche-sur-Cher"},
+            {"query": "Elysée, Paris",
+             "index": "poi"},
+            {"latitude": 48.86931,
+             "longitude": 2.316138,
+             "address": "Palais de l'Élysée 75008 Paris"},
         )
         assert 1 == len(self.proxy_server.requests)

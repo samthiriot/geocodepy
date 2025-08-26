@@ -114,7 +114,6 @@ class IGNFrance(Geocoder):
             '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.reverse_path)
         )
 
-
     def geocode(
             self,
             query,
@@ -165,18 +164,11 @@ class IGNFrance(Geocoder):
             params["limit"] = limit
         
         if index is not None:
-            indexes = index.split(',')
-            illegal_indexes = set(indexes) - {'address', 'parcel', 'poi'}
-            if illegal_indexes:
-                raise GeocoderQueryError(
-                    "Invalid index: %s. Valid indexes are: address, parcel, poi"
-                    % illegal_indexes
-                )
+            indexes = self._parse_index(index)
             params['index'] = ','.join(indexes)
 
         if type is not None:
-            if type not in {'housenumber', 'street', 'locality', 'municipality'}:
-                raise GeocoderQueryError("invalid type %s")
+            self._check_type(type)
             params['type'] = type
     
         url = "?".join((self.geocode_api, urlencode(params)))
@@ -189,9 +181,9 @@ class IGNFrance(Geocoder):
             self,
             query,
             *,
-            reverse_geocode_preference=('StreetAddress', ),
-            maximum_responses=25,
-            filtering='',
+            index='address',
+            type=None,
+            limit=25,
             exactly_one=True,
             timeout=DEFAULT_SENTINEL
     ):
@@ -207,8 +199,19 @@ class IGNFrance(Geocoder):
             type. It can be `StreetAddress` or `PositionOfInterest`.
             Default is set to `StreetAddress`.
 
-        :param int maximum_responses: The maximum number of responses
-            to ask to the API in the query body.
+        :param str index: The index to use for the geocoding.
+            It can be `address` for postal address, `parcel` for cadastral 
+            parcel, `poi` for point of interest. You can also combine them
+            with a comma.
+            Default is set to `address`.
+
+        :param str type: The type to use for address index. Can be `housenumber`,
+            `street`, `locality`, `municipality`
+
+        :param int limit: Defines the maximum number of items in the
+            response structure. If not provided and there are multiple
+            results the BAN API will return 10 results by default.
+            This will be reset to one if ``exactly_one`` is True.
 
         :param str filtering: Provide string that help setting geocoder
             filter. It contains an XML string. See examples in documentation
@@ -227,178 +230,46 @@ class IGNFrance(Geocoder):
 
         """
 
-        sub_request = """
-            <ReverseGeocodeRequest>
-                {reverse_geocode_preference}
-                <Position>
-                  <gml:Point>
-                    <gml:pos>{query}</gml:pos>
-                  </gml:Point>
-                  {filtering}
-                </Position>
-            </ReverseGeocodeRequest>
-        """
+        try:
+            lat, lon = self._coerce_point_to_string(query).split(',')
+        except ValueError:
+            raise ValueError("Must be a coordinate pair or Point")
 
-        xml_request = self.xml_request.format(
-            method_name='ReverseGeocodeRequest',
-            sub_request=sub_request,
-            maximum_responses=maximum_responses
-        )
+        params = {
+            'lat': lat,
+            'lon': lon,
+        }
 
-        for pref in reverse_geocode_preference:
-            if pref not in ('StreetAddress', 'PositionOfInterest'):
-                raise GeocoderQueryError(
-                    '`reverse_geocode_preference` must contain '
-                    'one or more of: StreetAddress, PositionOfInterest'
-                )
+        if index is not None:
+            indexes = self._parse_index(index)
+            params['index'] = ','.join(indexes)
 
-        point = self._coerce_point_to_string(query, "%(lat)s %(lon)s")
-        reverse_geocode_preference = '\n'.join(
-            '<ReverseGeocodePreference>%s</ReverseGeocodePreference>' % pref
-            for pref
-            in reverse_geocode_preference
-        )
+        if type is not None:
+            self._check_type(type)
+            params['type'] = type
 
-        request_string = xml_request.format(
-            maximum_responses=maximum_responses,
-            query=point,
-            reverse_geocode_preference=reverse_geocode_preference,
-            filtering=filtering
-        )
-
-        url = "?".join((self.api, urlencode({'xls': request_string})))
-
+        if limit is not None:
+            params["limit"] = limit    
+        
+        url = "?".join((self.reverse_api, urlencode(params)))
         logger.debug("%s.reverse: %s", self.__class__.__name__, url)
-        callback = partial(
-            self._parse_xml,
-            exactly_one=exactly_one,
-            is_reverse=True,
-            is_freeform='false'
-        )
-        return self._request_raw_content(url, callback, timeout=timeout)
+        callback = partial(self._parse_json, exactly_one=exactly_one)
+        return self._call_geocoder(url, callback, timeout=timeout)
 
-    def _parse_xml(self,
-                   page,
-                   is_reverse=False,
-                   is_freeform=False,
-                   exactly_one=True):
-        """
-        Returns location, (latitude, longitude) from XML feed
-        and transform to json
-        """
-        # Parse the page
-        tree = ET.fromstring(page.encode('utf-8'))
 
-        # Clean tree from namespace to facilitate XML manipulation
-        def remove_namespace(doc, namespace):
-            """Remove namespace in the document in place."""
-            ns = '{%s}' % namespace
-            nsl = len(ns)
-            for elem in doc.iter():
-                if elem.tag.startswith(ns):
-                    elem.tag = elem.tag[nsl:]
-
-        remove_namespace(tree, 'http://www.opengis.net/gml')
-        remove_namespace(tree, 'http://www.opengis.net/xls')
-        remove_namespace(tree, 'http://www.opengis.net/xlsext')
-
-        # Return places as json instead of XML
-        places = self._xml_to_json_places(tree, is_reverse=is_reverse)
-
-        if not places:
-            return None
-        if exactly_one:
-            return self._parse_place(places[0], is_freeform=is_freeform)
-        else:
-            return [
-                self._parse_place(
-                    place,
-                    is_freeform=is_freeform
-                ) for place in places
-            ]
-
-    def _xml_to_json_places(self, tree, is_reverse=False):
-        """
-        Transform the xml ElementTree due to XML webservice return to json
-        """
-
-        select_multi = (
-            'GeocodedAddress'
-            if not is_reverse
-            else 'ReverseGeocodedLocation'
-        )
-
-        adresses = tree.findall('.//' + select_multi)
-        places = []
-
-        sel_pl = './/Address/Place[@type="{}"]'
-        for adr in adresses:
-            el = {}
-            el['pos'] = adr.find('./Point/pos')
-            el['street'] = adr.find('.//Address/StreetAddress/Street')
-            el['freeformaddress'] = adr.find('.//Address/freeFormAddress')
-            el['municipality'] = adr.find(sel_pl.format('Municipality'))
-            el['numero'] = adr.find(sel_pl.format('Numero'))
-            el['feuille'] = adr.find(sel_pl.format('Feuille'))
-            el['section'] = adr.find(sel_pl.format('Section'))
-            el['departement'] = adr.find(sel_pl.format('Departement'))
-            el['commune_absorbee'] = adr.find(sel_pl.format('CommuneAbsorbee'))
-            el['commune'] = adr.find(sel_pl.format('Commune'))
-            el['insee'] = adr.find(sel_pl.format('INSEE'))
-            el['qualite'] = adr.find(sel_pl.format('Qualite'))
-            el['territoire'] = adr.find(sel_pl.format('Territoire'))
-            el['id'] = adr.find(sel_pl.format('ID'))
-            el['id_tr'] = adr.find(sel_pl.format('ID_TR'))
-            el['bbox'] = adr.find(sel_pl.format('Bbox'))
-            el['nature'] = adr.find(sel_pl.format('Nature'))
-            el['postal_code'] = adr.find('.//Address/PostalCode')
-            el['extended_geocode_match_code'] = adr.find(
-                './/ExtendedGeocodeMatchCode'
+    def _parse_index(self, index):
+        indexes = index.split(',')
+        illegal_indexes = set(indexes) - {'address', 'parcel', 'poi'}
+        if illegal_indexes:
+            raise GeocoderQueryError(
+                "Invalid index: %s. Valid indexes are: address, parcel, poi"
+                % illegal_indexes
             )
+        return indexes
 
-            place = {}
-
-            def testContentAttrib(selector, key):
-                """
-                Helper to select by attribute and if not attribute,
-                value set to empty string
-                """
-                return selector.attrib.get(
-                    key,
-                    None
-                ) if selector is not None else None
-
-            place['accuracy'] = testContentAttrib(
-                adr.find('.//GeocodeMatchCode'), 'accuracy')
-
-            place['match_type'] = testContentAttrib(
-                adr.find('.//GeocodeMatchCode'), 'matchType')
-
-            place['building'] = testContentAttrib(
-                adr.find('.//Address/StreetAddress/Building'), 'number')
-
-            place['search_centre_distance'] = testContentAttrib(
-                adr.find('.//SearchCentreDistance'), 'value')
-
-            for key, value in iter(el.items()):
-                if value is not None:
-                    place[key] = value.text
-                else:
-                    place[key] = None
-
-            # We check if lat lng is not empty and unpack accordingly
-            if place['pos']:
-                lat, lng = place['pos'].split(' ')
-                place['lat'] = lat.strip()
-                place['lng'] = lng.strip()
-            else:
-                place['lat'] = place['lng'] = None
-
-            # We removed the unused key
-            place.pop("pos", None)
-            places.append(place)
-
-        return places
+    def _check_type(self, type):
+        if type not in {'housenumber', 'street', 'locality', 'municipality'}:
+            raise GeocoderQueryError("invalid type %s")
 
     def _request_raw_content(self, url, callback, *, timeout):
         """
