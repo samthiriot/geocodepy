@@ -30,6 +30,7 @@ class TestLiveAddress(BaseTestGeocoder):
         return LiveAddress(
             auth_id=env['LIVESTREETS_AUTH_ID'],
             auth_token=env['LIVESTREETS_AUTH_TOKEN'],
+            cache=False,
             **kwargs
         )
 

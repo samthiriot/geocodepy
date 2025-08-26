@@ -9,7 +9,7 @@ class TestPhoton(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return Photon(**kwargs)
+        return Photon(cache=False, **kwargs)
 
     async def test_user_agent_custom(self):
         geocoder = Photon(

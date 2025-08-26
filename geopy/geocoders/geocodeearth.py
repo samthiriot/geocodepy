@@ -25,7 +25,9 @@ class GeocodeEarth(Pelias):
             user_agent=None,
             scheme=None,
             ssl_context=DEFAULT_SENTINEL,
-            adapter_factory=None
+            adapter_factory=None,
+            cache=None,
+            cache_expire=None
     ):
         """
         :param str api_key: Geocode.earth API key, required.
@@ -51,8 +53,17 @@ class GeocodeEarth(Pelias):
         :param callable adapter_factory:
             See :attr:`geopy.geocoders.options.default_adapter_factory`.
 
-            .. versionadded:: 2.0
+        :param cache:
+            Either True or None to activate cache, or False to disable it.
+            Default is None. 
+            If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
 
+        :param int cache_expire:
+            Time, in seconds, to keep a cached result in memory. 
+            Enables to query again the geocoder in case its database, or algorithm, has changed.
+            Default is 30 days.
+        
+            .. versionadded:: 2.0
         """
         super().__init__(
             api_key=api_key,
@@ -63,4 +74,6 @@ class GeocodeEarth(Pelias):
             scheme=scheme,
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
+            cache=cache,
+            cache_expire=cache_expire
         )

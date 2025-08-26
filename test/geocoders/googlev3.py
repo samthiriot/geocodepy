@@ -21,7 +21,7 @@ class TestGoogleV3(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return GoogleV3(api_key=env['GOOGLE_KEY'], **kwargs)
+        return GoogleV3(api_key=env['GOOGLE_KEY'], cache=False, **kwargs)
 
     async def test_user_agent_custom(self):
         geocoder = GoogleV3(

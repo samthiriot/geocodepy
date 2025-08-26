@@ -10,7 +10,7 @@ class TestPickPoint(BaseTestNominatim):
     @classmethod
     def make_geocoder(cls, **kwargs):
         return PickPoint(api_key=env['PICKPOINT_KEY'],
-                         timeout=3, **kwargs)
+                         timeout=3, cache=False, **kwargs)
 
     async def test_no_nominatim_user_agent_warning(self):
         with warnings.catch_warnings(record=True) as w:

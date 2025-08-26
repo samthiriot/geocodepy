@@ -93,5 +93,6 @@ class TestPelias(BaseTestPelias):
         return Pelias(
             env['PELIAS_DOMAIN'],
             api_key=env['PELIAS_KEY'],
+            cache=False,
             **kwargs,
         )

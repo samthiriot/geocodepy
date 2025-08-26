@@ -8,7 +8,7 @@ from test.geocoders.util import BaseTestGeocoder, env
 class TestMapBox(BaseTestGeocoder):
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return MapBox(api_key=env['MAPBOX_KEY'], timeout=3, **kwargs)
+        return MapBox(api_key=env['MAPBOX_KEY'], timeout=3, cache=False, **kwargs)
 
     async def test_geocode(self):
         await self.geocode_run(

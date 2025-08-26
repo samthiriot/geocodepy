@@ -6,7 +6,7 @@ from test.geocoders.util import BaseTestGeocoder, env
 class TestMapQuest(BaseTestGeocoder):
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return MapQuest(api_key=env['MAPQUEST_KEY'], timeout=3, **kwargs)
+        return MapQuest(api_key=env['MAPQUEST_KEY'], timeout=3, cache=False, **kwargs)
 
     async def test_geocode(self):
         await self.geocode_run(

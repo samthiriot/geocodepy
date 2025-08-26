@@ -9,7 +9,7 @@ from test.geocoders.util import BaseTestGeocoder, env
 class TestWoosmap(BaseTestGeocoder):
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return Woosmap(api_key=env['WOOSMAP_KEY'], **kwargs)
+        return Woosmap(api_key=env['WOOSMAP_KEY'], cache=False, **kwargs)
 
     async def test_user_agent_custom(self):
         geocoder = Woosmap(

@@ -8,4 +8,4 @@ class TestAzureMaps(BaseTestTomTom):
     @classmethod
     def make_geocoder(cls, **kwargs):
         return AzureMaps(env['AZURE_SUBSCRIPTION_KEY'], timeout=3,
-                         **kwargs)
+                         cache=False, **kwargs)

@@ -33,6 +33,7 @@ class TestOpenCage(BaseTestGeocoder):
         return OpenCage(
             api_key=env['OPENCAGE_KEY'],
             timeout=10,
+            cache=False,
             **kwargs
         )
 

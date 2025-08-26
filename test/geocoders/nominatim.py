@@ -353,7 +353,7 @@ class TestNominatim(BaseTestNominatim):
     @classmethod
     def make_geocoder(cls, **kwargs):
         kwargs.setdefault('user_agent', 'geopy-test')
-        return Nominatim(**kwargs)
+        return Nominatim(cache=False, **kwargs)
 
     async def test_default_user_agent_error(self):
         with pytest.raises(ConfigurationError):

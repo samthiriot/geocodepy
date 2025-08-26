@@ -9,7 +9,7 @@ class TestYandex(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return Yandex(api_key=env['YANDEX_KEY'], **kwargs)
+        return Yandex(api_key=env['YANDEX_KEY'], cache=False, **kwargs)
 
     async def test_user_agent_custom(self):
         geocoder = Yandex(

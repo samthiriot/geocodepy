@@ -13,6 +13,7 @@ class TestUnitBaidu(BaseTestGeocoder):
         return Baidu(
             api_key='DUMMYKEY1234',
             user_agent='my_user_agent/1.0',
+            cache=False,
             **kwargs
         )
 
@@ -49,6 +50,7 @@ class TestBaidu(BaseTestBaidu):
         return Baidu(
             api_key=env['BAIDU_KEY'],
             timeout=3,
+            cache=False,
             **kwargs,
         )
 
@@ -67,6 +69,7 @@ class TestBaiduSK(BaseTestBaidu):
             api_key=env['BAIDU_KEY_REQUIRES_SK'],
             security_key=env['BAIDU_SEC_KEY'],
             timeout=3,
+            cache=False,
             **kwargs,
         )
 
@@ -88,6 +91,7 @@ class TestBaiduV3(TestBaidu):
         return BaiduV3(
             api_key=env['BAIDU_V3_KEY'],
             timeout=3,
+            cache=False,
             **kwargs,
         )
 
@@ -100,5 +104,6 @@ class TestBaiduV3SK(TestBaiduSK):
             api_key=env['BAIDU_V3_KEY_REQUIRES_SK'],
             security_key=env['BAIDU_V3_SEC_KEY'],
             timeout=3,
+            cache=False,
             **kwargs,
         )

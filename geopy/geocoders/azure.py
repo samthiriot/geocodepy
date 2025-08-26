@@ -24,7 +24,9 @@ class AzureMaps(TomTom):
             user_agent=None,
             ssl_context=DEFAULT_SENTINEL,
             adapter_factory=None,
-            domain='atlas.microsoft.com'
+            domain='atlas.microsoft.com',
+            cache=None,
+            cache_expire=None
     ):
         """
         :param str subscription_key: Azure Maps subscription key.
@@ -52,6 +54,18 @@ class AzureMaps(TomTom):
 
         :param str domain: Domain where the target Azure Maps service
             is hosted.
+
+        :param cache:
+            Either True or None to activate cache, or False to disable it.
+            Default is None. 
+            If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
+
+        :param int cache_expire:
+            Time, in seconds, to keep a cached result in memory. 
+            Enables to query again the geocoder in case its database, or algorithm, has changed.
+            Default is 30 days.
+        
+            .. versionadded:: 2.0
         """
         super().__init__(
             api_key=subscription_key,
@@ -62,6 +76,8 @@ class AzureMaps(TomTom):
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
             domain=domain,
+            cache=cache,
+            cache_expire=cache_expire
         )
 
     def _geocode_params(self, formatted_query):
