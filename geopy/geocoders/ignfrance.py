@@ -284,8 +284,6 @@ class IGNFrance(Geocoder):
 
     def _parse_feature(self, feature):
         
-        print(feature)
-
         type_feature = feature.get('type')
         if not type_feature == 'Feature':
             raise GeocoderServiceError(
