@@ -1,5 +1,6 @@
 import collections.abc
 from functools import partial
+from typing import override
 from urllib.parse import urlencode
 
 from geopy.exc import ConfigurationError, GeocoderQueryError
@@ -111,7 +112,8 @@ class Nominatim(Geocoder):
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
             cache=cache,
-            cache_expire=cache_expire
+            cache_expire=cache_expire,
+            min_delay_seconds=1.1
         )
 
         self.domain = domain.strip('/')

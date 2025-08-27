@@ -89,7 +89,8 @@ class Geokeo(Geocoder):
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
             cache=cache,
-            cache_expire=cache_expire
+            cache_expire=cache_expire,
+            min_delay_seconds=1/1000
         )
 
         self.api_key = api_key

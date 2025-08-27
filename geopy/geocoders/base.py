@@ -2,6 +2,7 @@ import asyncio
 import functools
 import inspect
 import threading
+import logging
 
 from geopy import compat
 from geopy.adapters import (
@@ -24,7 +25,7 @@ from geopy.exc import (
 )
 from geopy.point import Point
 from geopy.util import __version__, logger
-
+from geopy.extra.rate_limiter import AsyncRateLimiter, RateLimiter
 
 try:
     from diskcache import Cache
@@ -243,7 +244,8 @@ class Geocoder:
             ssl_context=DEFAULT_SENTINEL,
             adapter_factory=None,
             cache=None,
-            cache_expire=None
+            cache_expire=None,
+            min_delay_seconds=None
     ):
         self.scheme = scheme or options.default_scheme
         if self.scheme not in ('http', 'https'):
@@ -277,17 +279,29 @@ class Geocoder:
                 % (type(self.adapter),)
             )
         
+        if min_delay_seconds is not None:
+            if self.__run_async:
+                self.__rate_limiter = AsyncRateLimiter(None, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
+            else:
+                self.__rate_limiter = RateLimiter(None, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
+            logger.debug("Using rate limiter with a delay of %s seconds", min_delay_seconds)
+        else: 
+            self.__rate_limiter = None
+        
         self.cache = None
         if diskcache_available:
             if isinstance(cache, Cache):
                 self.cache = cache
             elif cache is None or cache is True:
                 path = os.path.join(gettempdir(), "geocodepy", "cache", self.__class__.__name__)
-                print("allocating a cache for", self.__class__.__name__, "in", path)
-                self.cache = Cache(path, eviction_policy='least-frequently-used', statistics=True)
+                logger.info("The cache for %s is located at %s", self.__class__.__name__, path)
+                self.cache = Cache(path, eviction_policy='least-frequently-used', statistics=logger.isEnabledFor(logging.INFO))
             if self.cache is not None:
                 # invalidate cached results at init, to save space and get quicker results
                 self.cache.expire()
+                size = len(self.cache)
+                if size > 0:
+                    logger.info("The cache for %s already contains %s items", self.__class__.__name__, size)
             self.cache_expire = options.default_cache_expire if cache_expire is None else int(cache_expire)
         elif cache is not None:
             raise ConfigurationError("please install diskcache to activate cache")
@@ -295,6 +309,25 @@ class Geocoder:
     def clear_cache(self):
         if self.cache is not None:
             self.cache.clear()
+
+    def _is_cached(self, url):
+        if self.cache is None:
+            return False
+        return url in self.cache
+        
+    def geocode_batch(self, addresses, **kwargs):
+        """
+        Batch geocoding. The default implement just calls sequentially the geocoder.geocode method for each address.
+        Some geocoders may implement a more efficient batch geocoding method if they support a native batch geocoding method.
+
+        :param float min_delay_seconds:
+            The minimum delay between each geocoding request.
+            If not provided, the geocoder will not wait between requests.
+
+        Additional parameters will be bassed to the geocoder.geocode method.
+        """
+
+        return [self.geocode(address, **kwargs) for address in addresses]
 
     def __enter__(self):
         """Context manager for synchronous adapters. At exit all
@@ -398,19 +431,24 @@ class Geocoder:
         if headers:
             req_headers.update(headers)
 
-        print("headers:", req_headers)
-        print("url:", url)
-
         timeout = (timeout if timeout is not DEFAULT_SENTINEL
                    else self.timeout)
 
         try:
             result = self.cache.get(url, None) if self.cache is not None else None
             if result is None :
-                if is_json:
-                    result = self.adapter.get_json(url, timeout=timeout, headers=req_headers)
+                # the result was not cached, we need to call the geocoder
+                if self.__rate_limiter is None:
+                    # no rate limiter, we can call the geocoder directly
+                    if is_json:
+                        result = self.adapter.get_json(url, timeout=timeout, headers=req_headers)
+                    else:
+                        result = self.adapter.get_text(url, timeout=timeout, headers=req_headers)
                 else:
-                    result = self.adapter.get_text(url, timeout=timeout, headers=req_headers)
+                    # we have a rate limiter, we need to wrap the call to the geocoder
+                    self.__rate_limiter.func = self.adapter.get_json if is_json else self.adapter.get_text
+                    result = self.__rate_limiter(url, timeout=timeout, headers=req_headers)
+
             if self.__run_async:
                 async def fut():
                     try:
@@ -430,6 +468,9 @@ class Geocoder:
             else:
                 if self.cache is not None:
                     self.cache.set(url, result, expire=self.cache_expire)
+                    # add to the result the fact that it was cached
+                    for result in result:
+                        result["cached"] = True
                 return callback(result)
         except Exception as error:
             res = self._adapter_error_handler(error)
@@ -465,8 +506,17 @@ class Geocoder:
         if self.cache is not None:
             try:
                 hits, misses = self.cache.stats(enable=False, reset=True)
-                print("closing cache for", self.__class__.__name__, hits, "hits,", misses, "misses")
                 self.cache.expire()
+                logger.info(
+                    'Closing cache for %s: %s hits, %s misses. The cache contains %s items for %s Mb, stored in %s',
+                    self.__class__.__name__,
+                    hits,
+                    misses,
+                    len(self.cache),
+                    self.cache.volume() / 1024 / 1024,
+                    self.cache.directory,
+                    exc_info=False,
+                )
             finally:
                 self.cache.close()
 

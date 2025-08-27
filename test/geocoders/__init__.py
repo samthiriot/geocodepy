@@ -310,8 +310,10 @@ def test_no_extra_public_methods(geocoder_cls):
         "geocode",
         "reverse",
         "reverse_timezone",
-        "clear_cache"
+        "clear_cache",
+        "geocode_batch"
     }
     assert methods <= allowed, (
-        "Geopy geocoders are currently allowed to only have these methods: %s, but we found those: %s" % (allowed, methods-allowed)
+        "Geopy geocoders are currently allowed to only have these methods: %s, "
+        "but we found those: %s" % (allowed, methods-allowed)
     )
