@@ -296,6 +296,13 @@ class Geocoder:
         if self.cache is not None:
             self.cache.clear()
 
+    def geocode_batch(self, addresses, **kwargs):
+        """
+        Batch geocoding. The default implement just calls sequentially the geocoder.geocode method for each address.
+        Some geocoders may implement a more efficient batch geocoding method if they support a native batch geocoding method.
+        """
+        return [self.geocode(address, **kwargs) for address in addresses]
+
     def __enter__(self):
         """Context manager for synchronous adapters. At exit all
         open connections will be closed.

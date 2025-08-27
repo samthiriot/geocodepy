@@ -117,6 +117,28 @@ class BaseTestGeocoder(ABC):
                              **expected)
         return result
 
+    async def geocode_batch_run(
+        self, payloads, expecteds,
+        *,
+        skiptest_on_errors=True
+    ):
+        """
+        For each payload, calls geocoder.geocode(**payload), then checks against `expected`.
+        """
+        print(payloads, expecteds)
+        results = await self._make_request(
+                self.geocoder, 'geocode_batch',
+                skiptest_on_errors=skiptest_on_errors,
+                **payloads,
+            )
+        print(results)
+        for payload, result, expected in zip(payloads.get('addresses'), results, expecteds):
+            print(payload, result, expected)
+            self._verify_request(result, exactly_one=payloads.get('exactly_one', True),
+                             **expected)
+        
+        return results
+
     async def reverse_run(
         self, payload, expected,
         *,

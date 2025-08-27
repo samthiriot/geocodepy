@@ -186,13 +186,39 @@ class TestIGNFrance(BaseTestGeocoder):
         )
         assert res.address == 'Palais de l\'Élysée 75008 Paris'
 
-
     async def test_reverse_invalid_preference(self):
         with pytest.raises(GeocoderQueryError):
             self.geocoder.reverse(
                 query='47.229554,-1.541519',
                 index='a'  # invalid
             )
+
+    async def test_geocode_batch_addresses(self):
+        
+        test_data = {
+            "13 Rue de la Paix, 75002 Paris, France": {
+                "latitude": 48.86931,
+                "longitude": 2.316138,
+                "address": "13 Rue de la Paix 75002 Paris"},
+            "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER": {
+                "latitude": 47.293048,
+                "longitude": 1.718985,
+                "address": "Le Camp des Landes 41200 Villefranche-sur-Cher"},
+            "1 Pl. de la Comédie, 69001 Lyon, France": {
+                "latitude": 45.767808,
+                "longitude": 4.835757,
+                "address": "1 Place de la Comédie 69001 Lyon"},
+            "Palais de l'élysée, Paris": {
+                "latitude": 48.869397,
+                "longitude": 2.31688,
+                "address": "Rue de l'Elysée 75008 Paris"},
+            }
+    
+        results = await self.geocode_batch_run(
+            {"addresses": test_data.keys(), "index": "address", "exactly_one": True},
+            test_data.values())
+        
+        assert len(results) == len(test_data)
 
 class TestIGNFranceUsernameAuthProxy(BaseTestGeocoder):
     proxy_timeout = 5
