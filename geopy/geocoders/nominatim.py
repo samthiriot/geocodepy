@@ -1,5 +1,6 @@
 import collections.abc
 from functools import partial
+from typing import override
 from urllib.parse import urlencode
 
 from geopy.exc import ConfigurationError, GeocoderQueryError
@@ -386,6 +387,10 @@ class Nominatim(Geocoder):
         logger.debug("%s.reverse: %s", self.__class__.__name__, url)
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
+
+    @override
+    def geocode_batch(self, addresses, min_delay_seconds=1.1, **kwargs):
+        return super().geocode_batch(addresses, min_delay_seconds, **kwargs)
 
     def _parse_code(self, place):
         # Parse each resource.

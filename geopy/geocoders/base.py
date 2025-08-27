@@ -2,6 +2,7 @@ import asyncio
 import functools
 import inspect
 import threading
+import logging
 
 from geopy import compat
 from geopy.adapters import (
@@ -24,7 +25,7 @@ from geopy.exc import (
 )
 from geopy.point import Point
 from geopy.util import __version__, logger
-
+from geopy.extra.rate_limiter import AsyncRateLimiter, RateLimiter
 
 try:
     from diskcache import Cache
@@ -283,11 +284,14 @@ class Geocoder:
                 self.cache = cache
             elif cache is None or cache is True:
                 path = os.path.join(gettempdir(), "geocodepy", "cache", self.__class__.__name__)
-                print("allocating a cache for", self.__class__.__name__, "in", path)
-                self.cache = Cache(path, eviction_policy='least-frequently-used', statistics=True)
+                logger.info("The cache for %s is located at %s", self.__class__.__name__, path)
+                self.cache = Cache(path, eviction_policy='least-frequently-used', statistics=logger.isEnabledFor(logging.INFO))
             if self.cache is not None:
                 # invalidate cached results at init, to save space and get quicker results
                 self.cache.expire()
+                size = len(self.cache)
+                if size > 0:
+                    logger.info("The cache for %s already contains %s items", self.__class__.__name__, size)
             self.cache_expire = options.default_cache_expire if cache_expire is None else int(cache_expire)
         elif cache is not None:
             raise ConfigurationError("please install diskcache to activate cache")
@@ -296,12 +300,26 @@ class Geocoder:
         if self.cache is not None:
             self.cache.clear()
 
-    def geocode_batch(self, addresses, **kwargs):
+    def geocode_batch(self, addresses, min_delay_seconds=None, **kwargs):
         """
         Batch geocoding. The default implement just calls sequentially the geocoder.geocode method for each address.
         Some geocoders may implement a more efficient batch geocoding method if they support a native batch geocoding method.
+
+        :param float min_delay_seconds:
+            The minimum delay between each geocoding request.
+            If not provided, the geocoder will not wait between requests.
+
+        Additional parameters will be bassed to the geocoder.geocode method.
         """
-        return [self.geocode(address, **kwargs) for address in addresses]
+        if min_delay_seconds is not None:
+            if self.__run_async:
+                _geocode = AsyncRateLimiter(self.geocode, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
+            else:
+                _geocode = RateLimiter(self.geocode, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
+            logger.info("Using rate limiter with a delay of %s seconds", min_delay_seconds)
+        else:
+            _geocode = self.geocode
+        return [_geocode(address, **kwargs) for address in addresses]
 
     def __enter__(self):
         """Context manager for synchronous adapters. At exit all
@@ -405,9 +423,6 @@ class Geocoder:
         if headers:
             req_headers.update(headers)
 
-        print("headers:", req_headers)
-        print("url:", url)
-
         timeout = (timeout if timeout is not DEFAULT_SENTINEL
                    else self.timeout)
 
@@ -437,6 +452,9 @@ class Geocoder:
             else:
                 if self.cache is not None:
                     self.cache.set(url, result, expire=self.cache_expire)
+                    # add to the result the fact that it was cached
+                    for result in result:
+                        result["cached"] = True
                 return callback(result)
         except Exception as error:
             res = self._adapter_error_handler(error)
@@ -472,8 +490,17 @@ class Geocoder:
         if self.cache is not None:
             try:
                 hits, misses = self.cache.stats(enable=False, reset=True)
-                print("closing cache for", self.__class__.__name__, hits, "hits,", misses, "misses")
                 self.cache.expire()
+                logger.info(
+                    'Closing cache for %s: %s hits, %s misses. The cache contains %s items for %s Mb, stored in %s',
+                    self.__class__.__name__,
+                    hits,
+                    misses,
+                    len(self.cache),
+                    self.cache.volume() / 1024 / 1024,
+                    self.cache.directory,
+                    exc_info=False,
+                )
             finally:
                 self.cache.close()
 
