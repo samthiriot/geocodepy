@@ -112,7 +112,8 @@ class Nominatim(Geocoder):
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
             cache=cache,
-            cache_expire=cache_expire
+            cache_expire=cache_expire,
+            min_delay_seconds=1.1
         )
 
         self.domain = domain.strip('/')
@@ -387,10 +388,6 @@ class Nominatim(Geocoder):
         logger.debug("%s.reverse: %s", self.__class__.__name__, url)
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
-
-    @override
-    def geocode_batch(self, addresses, min_delay_seconds=1.1, **kwargs):
-        return super().geocode_batch(addresses, min_delay_seconds, **kwargs)
 
     def _parse_code(self, place):
         # Parse each resource.

@@ -244,7 +244,8 @@ class Geocoder:
             ssl_context=DEFAULT_SENTINEL,
             adapter_factory=None,
             cache=None,
-            cache_expire=None
+            cache_expire=None,
+            min_delay_seconds=None
     ):
         self.scheme = scheme or options.default_scheme
         if self.scheme not in ('http', 'https'):
@@ -278,6 +279,15 @@ class Geocoder:
                 % (type(self.adapter),)
             )
         
+        if min_delay_seconds is not None:
+            if self.__run_async:
+                self.__rate_limiter = AsyncRateLimiter(None, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
+            else:
+                self.__rate_limiter = RateLimiter(None, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
+            logger.debug("Using rate limiter with a delay of %s seconds", min_delay_seconds)
+        else: 
+            self.__rate_limiter = None
+        
         self.cache = None
         if diskcache_available:
             if isinstance(cache, Cache):
@@ -300,7 +310,12 @@ class Geocoder:
         if self.cache is not None:
             self.cache.clear()
 
-    def geocode_batch(self, addresses, min_delay_seconds=None, **kwargs):
+    def _is_cached(self, url):
+        if self.cache is None:
+            return False
+        return url in self.cache
+        
+    def geocode_batch(self, addresses, **kwargs):
         """
         Batch geocoding. The default implement just calls sequentially the geocoder.geocode method for each address.
         Some geocoders may implement a more efficient batch geocoding method if they support a native batch geocoding method.
@@ -311,15 +326,8 @@ class Geocoder:
 
         Additional parameters will be bassed to the geocoder.geocode method.
         """
-        if min_delay_seconds is not None:
-            if self.__run_async:
-                _geocode = AsyncRateLimiter(self.geocode, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
-            else:
-                _geocode = RateLimiter(self.geocode, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
-            logger.info("Using rate limiter with a delay of %s seconds", min_delay_seconds)
-        else:
-            _geocode = self.geocode
-        return [_geocode(address, **kwargs) for address in addresses]
+
+        return [self.geocode(address, **kwargs) for address in addresses]
 
     def __enter__(self):
         """Context manager for synchronous adapters. At exit all
@@ -429,10 +437,18 @@ class Geocoder:
         try:
             result = self.cache.get(url, None) if self.cache is not None else None
             if result is None :
-                if is_json:
-                    result = self.adapter.get_json(url, timeout=timeout, headers=req_headers)
+                # the result was not cached, we need to call the geocoder
+                if self.__rate_limiter is None:
+                    # no rate limiter, we can call the geocoder directly
+                    if is_json:
+                        result = self.adapter.get_json(url, timeout=timeout, headers=req_headers)
+                    else:
+                        result = self.adapter.get_text(url, timeout=timeout, headers=req_headers)
                 else:
-                    result = self.adapter.get_text(url, timeout=timeout, headers=req_headers)
+                    # we have a rate limiter, we need to wrap the call to the geocoder
+                    self.__rate_limiter.func = self.adapter.get_json if is_json else self.adapter.get_text
+                    result = self.__rate_limiter(url, timeout=timeout, headers=req_headers)
+
             if self.__run_async:
                 async def fut():
                     try:
