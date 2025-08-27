@@ -106,7 +106,8 @@ class IGNFrance(Geocoder):
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
             cache=cache,
-            cache_expire=cache_expire
+            cache_expire=cache_expire,
+            min_delay_seconds=1/50
         )
 
         if api_key or username or password or referer:
