@@ -1,4 +1,4 @@
-from geopy.geocoders import BANFrance
+from geocodepy.geocoders import BANFrance
 from test.geocoders.util import BaseTestGeocoder
 
 

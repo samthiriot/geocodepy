@@ -20,7 +20,7 @@ unless explicitly asked on the issue tracker.
     `__unicode__` magic for Python 2.7, and now it can be accessed
     as a public method.
 
-*   ADDED: `geopy.__version_info__` tuple which can be used to dynamically
+*   ADDED: `geocodepy.__version_info__` tuple which can be used to dynamically
     compare geopy version.
 
 *   ADDED: pytest `--skip-tests-requiring-internet` switch (might be useful
@@ -162,7 +162,7 @@ unless explicitly asked on the issue tracker.
 
 *   FIXED: `GeoNames.reverse_timezone` raised `KeyError` for points which
     don't have an assigned Olson timezone ID (e.g. Antarctica).
-    Now a valid `geopy.Timezone` is returned for such, where pytz timezone
+    Now a valid `geocodepy.Timezone` is returned for such, where pytz timezone
     is created as `pytz.FixedOffset`.
 
 *   FIXED: `GoogleV3.reverse_timezone` raised `KeyError` for points which
@@ -206,7 +206,7 @@ switch).
     the service itself doesn't yet support `https`, it will
     be possible to enable `https` via this new parameter as soon
     as they add the support, without waiting for a new release of
-    geopy.
+    geocodepy.
 
 *   CHANGED: Geonames now builds `Location.address` differently:
     previously it looked like ``Kreuzberg, 16, DE``, now it looks
@@ -219,7 +219,7 @@ switch).
 *   CHANGED: All warnings with `UserWarning` category which will be
     removed in geopy 2.0 now have the `DeprecationWarning` category.
 
-*   CHANGED: `geopy.extra.rate_limiter.RateLimiter` is no longer
+*   CHANGED: `geocodepy.extra.rate_limiter.RateLimiter` is no longer
     an experimental API.
 
 *   CHANGED: `GoogleV3.timezone` now issues a deprecation warning when
@@ -228,8 +228,8 @@ switch).
 
 *   CHANGED: `GoogleV3.timezone` method is now deprecated in favor of
     `GoogleV3.reverse_timezone`, which works exactly the same, except that
-    it returns a new `geopy.Timezone` object, which is a wrapper for
-    pytz timezone similarly to `geopy.Location`. This object also
+    it returns a new `geocodepy.Timezone` object, which is a wrapper for
+    pytz timezone similarly to `geocodepy.Location`. This object also
     contains a raw response of the service. `GoogleV3.timezone` will be
     removed in geopy 2.0. (#332)
 
@@ -268,7 +268,7 @@ switch).
 *   CHANGED: GoogleV3 now issues a warning when used without an API key.
 
 *   CHANGED: Parameters accepting bounding boxes have been unified to
-    accept a pair of diagonal points across all geopy. Previous
+    accept a pair of diagonal points across all geocodepy. Previous
     formats are still supported (until geopy 2.0) but now issue
     a warning when used.
 
@@ -285,7 +285,7 @@ switch).
 ------
 2018-07-28
 
-*   ADDED: ``geopy.extra.rate_limiter.RateLimiter`` class, useful for
+*   ADDED: ``geocodepy.extra.rate_limiter.RateLimiter`` class, useful for
     bulk-geocoding a pandas DataFrame. See also the new
     `Usage with Pandas` doc section. (#317)
 
@@ -319,7 +319,7 @@ switch).
 
 *   ADDED: `proxies` param of geocoders can now accept a single string
     instead of a dict. See the updated docs for
-    the ``geopy.geocoders.options.default_proxies`` attribute for
+    the ``geocodepy.geocoders.options.default_proxies`` attribute for
     more details.
     Contributed by svalee. (#300)
 
@@ -358,17 +358,17 @@ explaining the geopy's policy on breaking changes.
 *   ADDED: Some geocoders were missing `format_string` option. Now all
     geocoders support it.
 
-*   ADDED: `geopy.distance.lonlat` function for conveniently converting
+*   ADDED: `geocodepy.distance.lonlat` function for conveniently converting
     `(x, y, [z])` coordinate tuples to the `Point` instances, which use
     `(y, x, [z])`.
     Contributed by svalee. (#282)
 
-*   ADDED: `geopy.geocoders.options` object, which allows to configure
+*   ADDED: `geocodepy.geocoders.options` object, which allows to configure
     geocoder defaults (such as User-Agent, timeout, format_string)
     application-wide. (#288)
 
 *   ADDED: Support for supplying a custom SSL context. See docs for
-    `geopy.geocoders.options.default_ssl_context`. (#291)
+    `geocodepy.geocoders.options.default_ssl_context`. (#291)
 
 *   ADDED: Baidu geocoder was missing the `exactly_one` option in its `reverse`
     method.
@@ -417,8 +417,8 @@ explaining the geopy's policy on breaking changes.
 
 *   FIXED: `GeocodeFarm` had missing `Location.address` value sometimes.
 
-*   REMOVED: `geopy.geocoders.DEFAULT_*` constants (in favor of
-    `geopy.geocoders.options.default_*` attributes). (#288)
+*   REMOVED: `geocodepy.geocoders.DEFAULT_*` constants (in favor of
+    `geocodepy.geocoders.options.default_*` attributes). (#288)
 
 *   REMOVED: YahooPlaceFinder geocoder. (#283)
 
@@ -437,8 +437,8 @@ explaining the geopy's policy on breaking changes.
 *   ADDED: `Point` and `Location` instances are now picklable.
 
 *   ADDED: More accurate algorithm for distance computation
-    `geopy.distance.geodesic`, which is now a default
-    `geopy.distance.distance`. Vincenty usage is now discouraged in favor of
+    `geocodepy.distance.geodesic`, which is now a default
+    `geocodepy.distance.distance`. Vincenty usage is now discouraged in favor of
     the geodesic. This also has added a dependency of geopy on
     `geographiclib` package. Contributed by Charles Karney. (#144)
 
@@ -448,7 +448,7 @@ explaining the geopy's policy on breaking changes.
 *   CHANGED: `Point` now issues warnings for incorrect or ambiguous inputs.
     Some of them (namely not finite values and out of band latitudes)
     will be replaced with ValueError exceptions in the future versions
-    of geopy. (#272)
+    of geocodepy. (#272)
 
 *   CHANGED: `Point` now uses `fmod` instead of `%` which results in more
     accurate coordinates normalization. Contributed by svalee. (#275, #279)
@@ -481,7 +481,7 @@ explaining the geopy's policy on breaking changes.
 *   FIXED: Vincenty was throwing UnboundLocalError when difference between
     the two longitudes was close to 2*pi or either of them was NaN. (#187)
 
-*   REMOVED: `geopy.util.NullHandler` logging handler has been removed.
+*   REMOVED: `geocodepy.util.NullHandler` logging handler has been removed.
 
 
 1.12.0
@@ -518,10 +518,10 @@ explaining the geopy's policy on breaking changes.
     This also fixes broken Nominatim, which has recently banned
     the stock urllib user agent.
 
-*   FIXED: `geopy.util.get_version()` function was throwing
+*   FIXED: `geocodepy.util.get_version()` function was throwing
     an `ImportError` exception instead of returning a version string.
 
-*   FIXED: Docs for constructing a `geopy.point.Point` were referencing
+*   FIXED: Docs for constructing a `geocodepy.point.Point` were referencing
     latitude and longitude in a wrong order. Contributed by micahcochran
     and sjorek. (#207 #229)
 
@@ -734,7 +734,7 @@ explaining the geopy's policy on breaking changes.
 
 *   ADDED: OpenCage geocoder added. Contributed by Demeter Sztanko.
 
-*   ADDED: `geopy.geocoders.get_geocoder_for_service` allows library authors
+*   ADDED: `geocodepy.geocoders.get_geocoder_for_service` allows library authors
     to dynamically get a geocoder.
 
 *   FIXED: YahooPlacefinder bugs causing geocoding failure.
@@ -743,7 +743,7 @@ explaining the geopy's policy on breaking changes.
 
 *   FIXED: Location.__repr__ unicode encode error in Python 2.7.
 
-*   CHANGED: `geopy.geocoders` modules now strictly declare their exports.
+*   CHANGED: `geocodepy.geocoders` modules now strictly declare their exports.
 
 
 1.0.1

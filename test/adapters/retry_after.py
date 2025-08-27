@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from geopy.adapters import get_retry_after
+from geocodepy.adapters import get_retry_after
 
 
 @pytest.mark.parametrize(

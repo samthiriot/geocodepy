@@ -50,13 +50,13 @@ Changelog of the 0.9 series
 
 *   CHANGED: Geocoders' `geocode` and `reverse` method return types
     have changed from None, a tuple, or a list of tuples, to None,
-    a `geopy.Location` object, or a list of `geopy.Location` objects.
+    a `geocodepy.Location` object, or a list of `geocodepy.Location` objects.
 
     `Location` objects can be iterated over the same as
     the previous tuples for backwards compatibility, returning
     (address<String>, (latitude<float>, longitude<Float)).
 
-    `geopy.Location` objects also make returned data available as
+    `geocodepy.Location` objects also make returned data available as
     properties. Existing attributes are `address`, `longitude`, and
     `latitude`. Now available are the geocoder's raw response as `raw`,
     and the location's altitude as `altitude`.
@@ -154,9 +154,9 @@ Changelog of the 0.9 series
     `exactly_one` to False for a list.
 
 *   CHANGED: GoogleV3 returns new exception types:
-    `geopy.geocoders.base.GQueryError` -> `geopy.exc.GeocoderQueryError`
-    `geopy.geocoders.base.GeocoderResultError` -> `geopy.exc.GeocoderQueryError`
-    `geopy.geocoders.base.GTooManyQueriesError` -> `geopy.exc.GeocoderQuotaExceeded`
+    `geocodepy.geocoders.base.GQueryError` -> `geocodepy.exc.GeocoderQueryError`
+    `geocodepy.geocoders.base.GeocoderResultError` -> `geocodepy.exc.GeocoderQueryError`
+    `geocodepy.geocoders.base.GTooManyQueriesError` -> `geocodepy.exc.GeocoderQuotaExceeded`
 
 *   ADDED: OpenStreetMap Nominatim geocoder implemented. Contributed by
     Alessandro Pasotti.
@@ -195,7 +195,7 @@ Changelog of the 0.9 series
 2013-03-22
 
 *   FIXED: Fix `DeprecationWarning` showing for GoogleV2 even if
-    it wasn't being used (due to `geopy.geocoders` importing it).
+    it wasn't being used (due to `geocodepy.geocoders` importing it).
     Contributed by Dave Arter.
 
 *   CHANGED: `GoogleV3.geocode` "address" kwarg renamed to "string" to match

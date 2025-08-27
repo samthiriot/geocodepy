@@ -2,9 +2,9 @@ import uuid
 
 import pytest
 
-from geopy import Point
-from geopy.exc import GeocoderAuthenticationFailure, GeocoderQueryError
-from geopy.geocoders import GeoNames
+from geocodepy import Point
+from geocodepy.exc import GeocoderAuthenticationFailure, GeocoderQueryError
+from geocodepy.geocoders import GeoNames
 from test.geocoders.util import BaseTestGeocoder, env
 
 try:

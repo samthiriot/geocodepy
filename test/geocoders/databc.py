@@ -1,7 +1,7 @@
 import pytest
 
-from geopy.exc import GeocoderQueryError
-from geopy.geocoders import DataBC
+from geocodepy.exc import GeocoderQueryError
+from geocodepy.geocoders import DataBC
 from test.geocoders.util import BaseTestGeocoder
 
 

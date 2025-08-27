@@ -1,0 +1,214 @@
+from functools import partial
+from urllib.parse import quote, urlencode
+
+from geocodepy.geocoders.base import DEFAULT_SENTINEL, Geocoder
+from geocodepy.location import Location
+from geocodepy.point import Point
+from geocodepy.util import logger
+
+__all__ = ("MapTiler", )
+
+
+class MapTiler(Geocoder):
+    """Geocoder using the MapTiler API.
+
+    Documentation at:
+        https://cloud.maptiler.com/geocoding/ (requires sign-up)
+    """
+
+    api_path = '/geocoding/%(query)s.json'
+
+    def __init__(
+            self,
+            api_key,
+            *,
+            scheme=None,
+            timeout=DEFAULT_SENTINEL,
+            proxies=DEFAULT_SENTINEL,
+            user_agent=None,
+            ssl_context=DEFAULT_SENTINEL,
+            adapter_factory=None,
+            domain='api.maptiler.com',
+            cache=None,
+            cache_expire=None
+    ):
+        """
+        :param str api_key: The API key required by Maptiler to perform
+            geocoding requests. API keys are managed through Maptiler's account
+            page (https://cloud.maptiler.com/account/keys).
+
+        :param str scheme:
+            See :attr:`geocodepy.geocoders.options.default_scheme`.
+
+        :param int timeout:
+            See :attr:`geocodepy.geocoders.options.default_timeout`.
+
+        :param dict proxies:
+            See :attr:`geocodepy.geocoders.options.default_proxies`.
+
+        :param str user_agent:
+            See :attr:`geocodepy.geocoders.options.default_user_agent`.
+
+        :type ssl_context: :class:`ssl.SSLContext`
+        :param ssl_context:
+            See :attr:`geocodepy.geocoders.options.default_ssl_context`.
+
+        :param callable adapter_factory:
+            See :attr:`geocodepy.geocoders.options.default_adapter_factory`.
+
+            .. versionadded:: 2.0
+
+        :param str domain: base api domain for Maptiler
+
+        :param bool cache:
+            Either True or None to activate cache, or False to disable it.
+            Default is None. 
+            If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
+
+        :param int cache_expire:
+            Time, in seconds, to keep a cached result in memory. 
+            Enables to query again the geocoder in case its database, or algorithm, has changed.
+            Default is 30 days.
+        
+            .. versionadded:: 2.0
+        """
+        super().__init__(
+            scheme=scheme,
+            timeout=timeout,
+            proxies=proxies,
+            user_agent=user_agent,
+            ssl_context=ssl_context,
+            adapter_factory=adapter_factory,
+            cache=cache,
+            cache_expire=cache_expire
+        )
+        self.api_key = api_key
+        self.domain = domain.strip('/')
+        self.api = "%s://%s%s" % (self.scheme, self.domain, self.api_path)
+
+    def _parse_json(self, json, exactly_one=True):
+        # Returns location, (latitude, longitude) from json feed.
+        features = json['features']
+        if not features:
+            return None
+
+        def parse_feature(feature):
+            location = feature['place_name']
+            longitude = feature['center'][0]
+            latitude = feature['center'][1]
+
+            return Location(location, (latitude, longitude), feature)
+        if exactly_one:
+            return parse_feature(features[0])
+        else:
+            return [parse_feature(feature) for feature in features]
+
+    def geocode(
+            self,
+            query,
+            *,
+            exactly_one=True,
+            timeout=DEFAULT_SENTINEL,
+            proximity=None,
+            language=None,
+            bbox=None
+    ):
+        """
+        Return a location point by address.
+
+        :param str query: The address or query you wish to geocode.
+
+        :param bool exactly_one: Return one result or a list of results, if
+            available.
+
+        :param int timeout: Time, in seconds, to wait for the geocoding service
+            to respond before raising a :class:`geocodepy.exc.GeocoderTimedOut`
+            exception. Set this only if you wish to override, on this call
+            only, the value set during the geocoder's initialization.
+
+        :param proximity: A coordinate to bias local results based on a provided
+            location.
+        :type proximity: :class:`geocodepy.point.Point`, list or tuple of ``(latitude,
+            longitude)``, or string as ``"%(latitude)s, %(longitude)s"``.
+
+        :param language: Prefer results in specific languages. Accepts
+            a single string like ``"en"`` or a list like ``["de", "en"]``.
+        :type language: str or list
+
+        :param bbox: The bounding box of the viewport within which
+            to bias geocode results more prominently.
+            Example: ``[Point(22, 180), Point(-22, -180)]``.
+        :type bbox: list or tuple of 2 items of :class:`geocodepy.point.Point` or
+            ``(latitude, longitude)`` or ``"%(latitude)s, %(longitude)s"``.
+
+        :rtype: ``None``, :class:`geocodepy.location.Location` or a list of them, if
+            ``exactly_one=False``.
+        """
+        params = {'key': self.api_key}
+
+        query = query
+        if bbox:
+            params['bbox'] = self._format_bounding_box(
+                bbox, "%(lon1)s,%(lat1)s,%(lon2)s,%(lat2)s")
+
+        if isinstance(language, str):
+            language = [language]
+        if language:
+            params['language'] = ','.join(language)
+
+        if proximity:
+            p = Point(proximity)
+            params['proximity'] = "%s,%s" % (p.longitude, p.latitude)
+
+        quoted_query = quote(query.encode('utf-8'))
+        url = "?".join((self.api % dict(query=quoted_query),
+                        urlencode(params)))
+        logger.debug("%s.geocode: %s", self.__class__.__name__, url)
+        callback = partial(self._parse_json, exactly_one=exactly_one)
+        return self._call_geocoder(url, callback, timeout=timeout)
+
+    def reverse(
+            self,
+            query,
+            *,
+            exactly_one=True,
+            timeout=DEFAULT_SENTINEL,
+            language=None
+    ):
+        """
+        Return an address by location point.
+
+        :param query: The coordinates for which you wish to obtain the
+            closest human-readable addresses.
+        :type query: :class:`geocodepy.point.Point`, list or tuple of ``(latitude,
+            longitude)``, or string as ``"%(latitude)s, %(longitude)s"``.
+
+        :param bool exactly_one: Return one result or a list of results, if
+            available.
+
+        :param int timeout: Time, in seconds, to wait for the geocoding service
+            to respond before raising a :class:`geocodepy.exc.GeocoderTimedOut`
+            exception. Set this only if you wish to override, on this call
+            only, the value set during the geocoder's initialization.
+
+        :param language: Prefer results in specific languages. Accepts
+            a single string like ``"en"`` or a list like ``["de", "en"]``.
+        :type language: str or list
+
+        :rtype: ``None``, :class:`geocodepy.location.Location` or a list of them, if
+            ``exactly_one=False``.
+        """
+        params = {'key': self.api_key}
+
+        if isinstance(language, str):
+            language = [language]
+        if language:
+            params['language'] = ','.join(language)
+
+        point = self._coerce_point_to_string(query, "%(lon)s,%(lat)s")
+        quoted_query = quote(point.encode('utf-8'))
+        url = "?".join((self.api % dict(query=quoted_query),
+                        urlencode(params)))
+        logger.debug("%s.reverse: %s", self.__class__.__name__, url)
+        callback = partial(self._parse_json, exactly_one=exactly_one)
+        return self._call_geocoder(url, callback, timeout=timeout)

@@ -3,10 +3,10 @@ from unittest.mock import patch
 
 import pytest
 
-import geopy.geocoders
-from geopy.exc import ConfigurationError
-from geopy.geocoders import Nominatim
-from geopy.point import Point
+import geocodepy.geocoders
+from geocodepy.exc import ConfigurationError
+from geocodepy.geocoders import Nominatim
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder
 
 
@@ -78,7 +78,7 @@ class BaseTestNominatim(BaseTestGeocoder):
         assert len(result) >= 3  # PickPoint sometimes returns 3
         assert 4 >= len(result)
 
-    @patch.object(geopy.geocoders.options, 'default_user_agent',
+    @patch.object(geocodepy.geocoders.options, 'default_user_agent',
                   'mocked_user_agent/0.0.0')
     def test_user_agent_default(self):
         geocoder = self.make_geocoder(user_agent=None)
@@ -394,12 +394,12 @@ class TestNominatim(BaseTestNominatim):
     async def test_custom_user_agent_works(self):
         Nominatim(user_agent='my_application')
 
-        with patch.object(geopy.geocoders.options, 'default_user_agent',
+        with patch.object(geocodepy.geocoders.options, 'default_user_agent',
                           'my_application'):
             Nominatim()
 
     def test_import_deprecated_osm_module(self):
         with warnings.catch_warnings(record=True) as w:
-            from geopy.geocoders.osm import Nominatim as OsmNominatim
+            from geocodepy.geocoders.osm import Nominatim as OsmNominatim
         assert len(w) == 1
         assert OsmNominatim is Nominatim

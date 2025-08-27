@@ -1,8 +1,8 @@
 import pytest
 
-from geopy import exc
-from geopy.geocoders import ArcGIS
-from geopy.point import Point
+from geocodepy import exc
+from geocodepy.geocoders import ArcGIS
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 

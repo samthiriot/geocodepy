@@ -14,9 +14,9 @@ from urllib.parse import urlparse
 
 import pytest
 
-import geopy.geocoders
-from geopy.adapters import AdapterHTTPError, BaseAsyncAdapter, BaseSyncAdapter
-from geopy.geocoders.base import _DEFAULT_ADAPTER_CLASS
+import geocodepy.geocoders
+from geocodepy.adapters import AdapterHTTPError, BaseAsyncAdapter, BaseSyncAdapter
+from geocodepy.geocoders.base import _DEFAULT_ADAPTER_CLASS
 
 
 def load_adapter_cls(adapter_ref):
@@ -28,10 +28,10 @@ def load_adapter_cls(adapter_ref):
     return actual_adapter_class
 
 
-max_retries = int(os.getenv('GEOPY_TEST_RETRIES', 2))
-error_wait_seconds = float(os.getenv('GEOPY_TEST_ERROR_WAIT_SECONDS', 3))
-no_retries_for_hosts = set(os.getenv('GEOPY_TEST_NO_RETRIES_FOR_HOSTS', '').split(','))
-default_adapter = load_adapter_cls(os.getenv('GEOPY_TEST_ADAPTER'))
+max_retries = int(os.getenv('GEOCODEPY_TEST_RETRIES', 2))
+error_wait_seconds = float(os.getenv('GEOCODEPY_TEST_ERROR_WAIT_SECONDS', 3))
+no_retries_for_hosts = set(os.getenv('GEOCODEPY_TEST_NO_RETRIES_FOR_HOSTS', '').split(','))
+default_adapter = load_adapter_cls(os.getenv('GEOCODEPY_TEST_ADAPTER'))
 default_adapter_is_async = issubclass(default_adapter, BaseAsyncAdapter)
 retry_status_codes = (
     403,  # Forbidden (probably due to a rate limit)
@@ -263,7 +263,7 @@ def patch_adapter(
         is_internet_access_allowed=is_internet_access_allowed,
     )
     with patch.object(
-        geopy.geocoders.options, "default_adapter_factory", adapter_factory
+        geocodepy.geocoders.options, "default_adapter_factory", adapter_factory
     ):
         yield
 

@@ -1,7 +1,8 @@
 name: CI
 
 on:
-  pull_request: {}
+  pull_request:
+      types: [opened, synchronize, reopened]
   push: {}
 
 jobs:
@@ -56,7 +57,7 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip setuptools
         python3 -m pip install tox tox-gh-actions
-    - run: GEOPY_TOX_TARGET=test-local tox
+    - run: GEOCODEPY_TOX_TARGET=test-local tox
 
   test_full:
     if: ${{ github.event_name != 'pull_request' }}

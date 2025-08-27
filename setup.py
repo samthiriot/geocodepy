@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-from geopy import __version__ as version
+from geocodepy import __version__ as version
 
 EXTRAS_DEV_LINT = [
     "flake8>=5.0,<5.1",

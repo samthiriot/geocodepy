@@ -2,13 +2,13 @@ import inspect
 
 import pytest
 
-import geopy.exc
+import geocodepy.exc
 
 error_classes = sorted(
     [
         v
-        for v in (getattr(geopy.exc, name) for name in dir(geopy.exc))
-        if inspect.isclass(v) and issubclass(v, geopy.exc.GeopyError)
+        for v in (getattr(geocodepy.exc, name) for name in dir(geocodepy.exc))
+        if inspect.isclass(v) and issubclass(v, geocodepy.exc.GeopyError)
     ],
     key=lambda cls: cls.__name__,
 )

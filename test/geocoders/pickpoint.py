@@ -1,6 +1,6 @@
 import warnings
 
-from geopy.geocoders import PickPoint
+from geocodepy.geocoders import PickPoint
 from test.geocoders.nominatim import BaseTestNominatim
 from test.geocoders.util import env
 

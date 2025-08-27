@@ -1,4 +1,4 @@
-from geopy.geocoders import GeocodeEarth
+from geocodepy.geocoders import GeocodeEarth
 from test.geocoders.pelias import BaseTestPelias
 from test.geocoders.util import env
 

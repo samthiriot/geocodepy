@@ -4,7 +4,7 @@ import sys
 import unittest
 import warnings
 
-from geopy.point import Point
+from geocodepy.point import Point
 
 
 class PointTestCase(unittest.TestCase):

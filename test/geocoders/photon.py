@@ -1,5 +1,5 @@
-from geopy.geocoders import Photon
-from geopy.point import Point
+from geocodepy.geocoders import Photon
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder
 
 

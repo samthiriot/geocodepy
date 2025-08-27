@@ -1,4 +1,4 @@
-version := $(shell python -c 'from geopy import __version__; print(__version__)')
+version := $(shell python -c 'from geocodepy import __version__; print(__version__)')
 
 .PHONY: venv
 venv:

@@ -6,9 +6,9 @@ from unittest.mock import ANY, patch
 
 import pytest
 
-from geopy import exc
-from geopy.adapters import BaseAsyncAdapter
-from geopy.location import Location
+from geocodepy import exc
+from geocodepy.adapters import BaseAsyncAdapter
+from geocodepy.location import Location
 
 _env = {}
 try:

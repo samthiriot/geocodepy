@@ -1,7 +1,7 @@
 import pytest
 
-from geopy.exc import GeocoderQueryError
-from geopy.geocoders import IGNFrance
+from geocodepy.exc import GeocoderQueryError
+from geocodepy.geocoders import IGNFrance
 from test.geocoders.util import BaseTestGeocoder
 from test.proxy_server import ProxyServerThread
 

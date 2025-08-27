@@ -1,8 +1,8 @@
 import pytest
 
-from geopy.exc import GeocoderAuthenticationFailure
-from geopy.geocoders import Baidu, BaiduV3
-from geopy.point import Point
+from geocodepy.exc import GeocoderAuthenticationFailure
+from geocodepy.geocoders import Baidu, BaiduV3
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 

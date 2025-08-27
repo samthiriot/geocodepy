@@ -1,5 +1,5 @@
-from geopy.geocoders import Bing
-from geopy.point import Point
+from geocodepy.geocoders import Bing
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 
