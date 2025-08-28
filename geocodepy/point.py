@@ -9,7 +9,13 @@ from itertools import islice
 from math import fmod, isfinite
 
 from geocodepy import units, util
-from geocodepy.format import DEGREE, DOUBLE_PRIME, PRIME, format_degrees, format_distance
+from geocodepy.format import (
+    DEGREE,
+    DOUBLE_PRIME,
+    PRIME,
+    format_degrees,
+    format_distance,
+)
 
 POINT_PATTERN = re.compile(r"""
     .*?

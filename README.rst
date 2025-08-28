@@ -21,8 +21,9 @@ IGNFrance geocoder:
 A word on performance:
 * install the diskcache library to enable caching. This will avoid querying the same address multiple times, and therefore save you time and money.
 
-OLD README:
 
+OLD README:
+--------------------
 .. image:: https://img.shields.io/pypi/v/geopy.svg?style=flat-square
     :target: https://pypi.python.org/pypi/geopy/
     :alt: Latest Version

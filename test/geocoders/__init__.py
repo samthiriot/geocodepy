@@ -118,7 +118,7 @@ def test_all_geocoders_are_exported_from_package():
     not_exported = expected - actual
     assert not not_exported, (
         "These geocoders must be exported (via imports) "
-        "in geopy/geocoders/__init__.py"
+        "in geocodepy/geocoders/__init__.py"
     )
 
 
@@ -128,14 +128,15 @@ def test_all_geocoders_are_listed_in_all():
     not_exported = expected - actual
     assert not not_exported, (
         "These geocoders must be listed in the `__all__` tuple "
-        "in geopy/geocoders/__init__.py"
+        "in geocodepy/geocoders/__init__.py"
     )
 
 
 def test_all_geocoders_are_listed_in_service_to_geocoder():
-    assert set(geocoder_classes) == set(geocodepy.geocoders.SERVICE_TO_GEOCODER.values()), (
+    assert (set(geocoder_classes) ==
+            set(geocodepy.geocoders.SERVICE_TO_GEOCODER.values())), (
         "All geocoders must be listed in the `SERVICE_TO_GEOCODER` dict "
-        "in geopy/geocoders/__init__.py"
+        "in geocodepy/geocoders/__init__.py"
     )
 
 
@@ -314,6 +315,6 @@ def test_no_extra_public_methods(geocoder_cls):
         "geocode_batch"
     }
     assert methods <= allowed, (
-        "Geopy geocoders are currently allowed to only have these methods: %s, "
-        "but we found those: %s" % (allowed, methods-allowed)
+        "Geocodepy geocoders are currently allowed to only have these methods: %s, "
+        "but we found those: %s" % (allowed, methods - allowed)
     )

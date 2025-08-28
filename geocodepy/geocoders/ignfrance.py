@@ -92,12 +92,12 @@ class IGNFrance(Geocoder):
 
         :param int cache_expire:
             Time, in seconds, to keep a cached result in memory. 
-            Enables to query again the geocoder in case its database, or algorithm, has changed.
-            Default is 30 days.
-        
+            Enables to query again the geocoder in case its database, or algorithm,
+            has changed. Default is 30 days.
+
             .. versionadded:: 2.0
         """  # noqa
-        
+
         super().__init__(
             scheme=scheme,
             timeout=timeout,
@@ -107,7 +107,7 @@ class IGNFrance(Geocoder):
             adapter_factory=adapter_factory,
             cache=cache,
             cache_expire=cache_expire,
-            min_delay_seconds=1/50
+            min_delay_seconds=1 / 50
         )
 
         if api_key or username or password or referer:
@@ -149,7 +149,7 @@ class IGNFrance(Geocoder):
             results the BAN API will return 10 results by default.
 
         :param str index: The index to use for the geocoding.
-            It can be `address` for postal address, `parcel` for cadastral 
+            It can be `address` for postal address, `parcel` for cadastral
             parcel, `poi` for point of interest. You can also combine them
             with a comma.
             Default is set to `address`.
@@ -176,7 +176,7 @@ class IGNFrance(Geocoder):
 
         if limit is not None:
             params["limit"] = limit
-        
+
         if index is not None:
             indexes = self._parse_index(index)
             params['index'] = ','.join(indexes)
@@ -184,7 +184,7 @@ class IGNFrance(Geocoder):
         if type is not None:
             self._check_type(type)
             params['type'] = type
-    
+
         url = "?".join((self.geocode_api, urlencode(params)))
 
         logger.debug("%s.geocode: %s", self.__class__.__name__, url)
@@ -210,7 +210,7 @@ class IGNFrance(Geocoder):
             longitude)``, or string as ``"%(latitude)s, %(longitude)s"``.
 
         :param str index: The index to use for the geocoding.
-            It can be `address` for postal address, `parcel` for cadastral 
+            It can be `address` for postal address, `parcel` for cadastral
             parcel, `poi` for point of interest. You can also combine them
             with a comma.
             Default is set to `address`.
@@ -254,13 +254,12 @@ class IGNFrance(Geocoder):
             params['type'] = type
 
         if limit is not None:
-            params["limit"] = limit    
-        
+            params["limit"] = limit
+
         url = "?".join((self.reverse_api, urlencode(params)))
         logger.debug("%s.reverse: %s", self.__class__.__name__, url)
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
-
 
     def _parse_index(self, index):
         indexes = index.split(',')
@@ -288,7 +287,7 @@ class IGNFrance(Geocoder):
         )
 
     def _parse_feature(self, feature):
-        
+
         type_feature = feature.get('type')
         if not type_feature == 'Feature':
             raise GeocoderServiceError(
@@ -298,18 +297,19 @@ class IGNFrance(Geocoder):
         geometry = feature.get('geometry', {})
         latitude = geometry.get('coordinates', [])[1]
         longitude = geometry.get('coordinates', [])[0]
-        
+
         properties = feature.get('properties', {})
         placename = properties.get('label', None)
         # in case of POI, the service does not always return a label
         if placename is None:
-            # in this case we do our best to generate something looking like an address, in the form <toponym> <postcode> <city>
+            # in this case we do our best to generate something looking like an
+            # address, in the form <toponym> <postcode> <city>
             placename = " ".join(e for e in [
                 properties.get('toponym'),
-                properties.get('postcode',[None])[0],
+                properties.get('postcode', [None])[0],
                 properties.get('city', [None])[0]
-                ] if e is not None)
-            
+            ] if e is not None)
+
         return Location(placename, (latitude, longitude), feature)
 
     def _parse_json(self, response, exactly_one):

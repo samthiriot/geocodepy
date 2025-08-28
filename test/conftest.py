@@ -30,7 +30,8 @@ def load_adapter_cls(adapter_ref):
 
 max_retries = int(os.getenv('GEOCODEPY_TEST_RETRIES', 2))
 error_wait_seconds = float(os.getenv('GEOCODEPY_TEST_ERROR_WAIT_SECONDS', 3))
-no_retries_for_hosts = set(os.getenv('GEOCODEPY_TEST_NO_RETRIES_FOR_HOSTS', '').split(','))
+no_retries_for_hosts = set(
+    os.getenv('GEOCODEPY_TEST_NO_RETRIES_FOR_HOSTS', '').split(','))
 default_adapter = load_adapter_cls(os.getenv('GEOCODEPY_TEST_ADAPTER'))
 default_adapter_is_async = issubclass(default_adapter, BaseAsyncAdapter)
 retry_status_codes = (

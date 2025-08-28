@@ -21,7 +21,6 @@ class TestIGNFrance(BaseTestGeocoder):
         )
         assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
 
-
     async def test_geocode_parcel(self):
         await self.geocode_run(
             {"query": "44109000EX0114",
@@ -62,7 +61,7 @@ class TestIGNFrance(BaseTestGeocoder):
         )
 
     async def test_geocode_with_poi1(self):
-        """Tests the presidential palais (stable location). Expected result 
+        """Tests the presidential palais (stable location). Expected result
         does contain the postcode and city"""
         await self.geocode_run(
             {"query": "Elysée, Paris",
@@ -94,7 +93,7 @@ class TestIGNFrance(BaseTestGeocoder):
         assert res.raw.get('type') == 'Feature'
         assert res.raw.get('properties').get('type') == 'housenumber'
         assert int(res.raw.get('properties').get('housenumber')) == 13
-        
+
     async def test_geocode_with_type_street(self):
         """tests the type parameter street"""
         res = await self.geocode_run(
@@ -105,7 +104,7 @@ class TestIGNFrance(BaseTestGeocoder):
         )
         assert res.raw.get('type') == 'Feature'
         assert res.raw.get('properties').get('type') == 'street'
-        
+
     async def test_geocode_with_type_locality(self):
         """tests the type parameter street"""
         res = await self.geocode_run(
@@ -194,7 +193,7 @@ class TestIGNFrance(BaseTestGeocoder):
             )
 
     async def test_geocode_batch_addresses(self):
-        
+
         test_data = {
             "13 Rue de la Paix, 75002 Paris, France": {
                 "latitude": 48.86931,
@@ -212,13 +211,14 @@ class TestIGNFrance(BaseTestGeocoder):
                 "latitude": 48.869397,
                 "longitude": 2.31688,
                 "address": "Rue de l'Elysée 75008 Paris"},
-            }
-    
+        }
+
         results = await self.geocode_batch_run(
             {"addresses": test_data.keys(), "index": "address", "exactly_one": True},
             test_data.values())
-        
+
         assert len(results) == len(test_data)
+
 
 class TestIGNFranceUsernameAuthProxy(BaseTestGeocoder):
     proxy_timeout = 5

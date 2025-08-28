@@ -37,33 +37,33 @@ class BANFrance(Geocoder):
             be changed for testing purposes.
 
         :param str scheme:
-            See :attr:`geopy.geocoders.options.default_scheme`.
+            See :attr:`geocodepy.geocoders.options.default_scheme`.
 
         :param int timeout:
-            See :attr:`geopy.geocoders.options.default_timeout`.
+            See :attr:`geocodepy.geocoders.options.default_timeout`.
 
         :param dict proxies:
-            See :attr:`geopy.geocoders.options.default_proxies`.
+            See :attr:`geocodepy.geocoders.options.default_proxies`.
 
         :param str user_agent:
-            See :attr:`geopy.geocoders.options.default_user_agent`.
+            See :attr:`geocodepy.geocoders.options.default_user_agent`.
 
         :type ssl_context: :class:`ssl.SSLContext`
         :param ssl_context:
-            See :attr:`geopy.geocoders.options.default_ssl_context`.
+            See :attr:`geocodepy.geocoders.options.default_ssl_context`.
 
         :param callable adapter_factory:
-            See :attr:`geopy.geocoders.options.default_adapter_factory`.
+            See :attr:`geocodepy.geocoders.options.default_adapter_factory`.
 
         :param bool cache:
             Either True or None to activate cache, or False to disable it.
-            Default is None. 
+            Default is None.
             If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
 
         :param int cache_expire:
-            Time, in seconds, to keep a cached result in memory. 
-            Enables to query again the geocoder in case its database, or algorithm, has changed.
-            Default is 30 days.
+            Time, in seconds, to keep a cached result in memory.
+            Enables to query again the geocoder in case its database, or algorithm,
+            has changed. Default is 30 days.
 
             .. versionadded:: 2.0
 
@@ -77,7 +77,7 @@ class BANFrance(Geocoder):
             adapter_factory=adapter_factory,
             cache=cache,
             cache_expire=cache_expire,
-            min_delay_seconds=1/50
+            min_delay_seconds=1 / 50
         )
         self.domain = domain.strip('/')
 
@@ -110,11 +110,11 @@ class BANFrance(Geocoder):
             available.
 
         :param int timeout: Time, in seconds, to wait for the geocoding service
-            to respond before raising a :class:`geopy.exc.GeocoderTimedOut`
+            to respond before raising a :class:`geocodepy.exc.GeocoderTimedOut`
             exception. Set this only if you wish to override, on this call
             only, the value set during the geocoder's initialization.
 
-        :rtype: ``None``, :class:`geopy.location.Location` or a list of them, if
+        :rtype: ``None``, :class:`geocodepy.location.Location` or a list of them, if
             ``exactly_one=False``.
 
         """
@@ -144,18 +144,18 @@ class BANFrance(Geocoder):
 
         :param query: The coordinates for which you wish to obtain the
             closest human-readable addresses.
-        :type query: :class:`geopy.point.Point`, list or tuple of ``(latitude,
+        :type query: :class:`geocodepy.point.Point`, list or tuple of ``(latitude,
             longitude)``, or string as ``"%(latitude)s, %(longitude)s"``.
 
         :param bool exactly_one: Return one result or a list of results, if
             available.
 
         :param int timeout: Time, in seconds, to wait for the geocoding service
-            to respond before raising a :class:`geopy.exc.GeocoderTimedOut`
+            to respond before raising a :class:`geocodepy.exc.GeocoderTimedOut`
             exception. Set this only if you wish to override, on this call
             only, the value set during the geocoder's initialization.
 
-        :rtype: ``None``, :class:`geopy.location.Location` or a list of them, if
+        :rtype: ``None``, :class:`geocodepy.location.Location` or a list of them, if
             ``exactly_one=False``.
 
         """
@@ -180,7 +180,7 @@ class BANFrance(Geocoder):
         latitude = feature.get('geometry', {}).get('coordinates', [])[1]
         longitude = feature.get('geometry', {}).get('coordinates', [])[0]
         placename = feature.get('properties', {}).get('label')
-        postcode = feature.get('properties', {}).get('postcode')
+        # postcode = feature.get('properties', {}).get('postcode')
 
         return Location(placename, (latitude, longitude), feature)
 

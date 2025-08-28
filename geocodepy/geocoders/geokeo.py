@@ -71,14 +71,14 @@ class Geokeo(Geocoder):
 
         :param bool cache:
             Either True or None to activate cache, or False to disable it.
-            Default is None. 
+            Default is None.
             If a a :class:`diskcache.Cache` instance is passed, it will be used as is.
 
         :param int cache_expire:
-            Time, in seconds, to keep a cached result in memory. 
-            Enables to query again the geocoder in case its database, or algorithm, has changed.
-            Default is 30 days.
-        
+            Time, in seconds, to keep a cached result in memory.
+            Enables to query again the geocoder in case its database, or algorithm,
+            has changed. Default is 30 days.
+
             .. versionadded:: 2.0
         """
         super().__init__(
@@ -90,7 +90,7 @@ class Geokeo(Geocoder):
             adapter_factory=adapter_factory,
             cache=cache,
             cache_expire=cache_expire,
-            min_delay_seconds=1/1000
+            min_delay_seconds=1 / 1000
         )
 
         self.api_key = api_key

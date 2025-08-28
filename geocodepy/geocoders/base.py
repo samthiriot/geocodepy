@@ -1,8 +1,8 @@
 import asyncio
 import functools
 import inspect
-import threading
 import logging
+import threading
 
 from geocodepy import compat
 from geocodepy.adapters import (
@@ -23,20 +23,22 @@ from geocodepy.exc import (
     GeocoderServiceError,
     GeocoderTimedOut,
 )
+from geocodepy.extra.rate_limiter import AsyncRateLimiter, RateLimiter
 from geocodepy.point import Point
 from geocodepy.util import __version__, logger
-from geocodepy.extra.rate_limiter import AsyncRateLimiter, RateLimiter
 
 try:
-    from diskcache import Cache
     import os
     from tempfile import gettempdir
+
+    from diskcache import Cache
     diskcache_available = True
 except ImportError:
     diskcache_available = False
 
-# the role of cache expiration is to reflect the fact databases of geocoders can be updated.
-_DEFAULT_CACHE_EXPIRE = 60*60*24*30 # 30 days
+# the role of cache expiration is to reflect the fact databases of
+# geocoders can be updated.
+_DEFAULT_CACHE_EXPIRE = 60 * 60 * 24 * 30  # 30 days
 
 __all__ = (
     "Geocoder",
@@ -50,6 +52,7 @@ _DEFAULT_ADAPTER_CLASS = next(
     for adapter_cls in (RequestsAdapter, URLLibAdapter,)
     if adapter_cls.is_available
 )
+
 
 class options:
     """The `options` object contains default configuration values for
@@ -180,9 +183,9 @@ class options:
             User-Agent header to send with the requests to geocoder API.
 
         default_cache_expire
-            Time, in seconds, to keep a cached result in memory. 
-            Enables to query again the geocoder in case its database, or algorithm, has changed.
-            Default is 30 days.
+            Time, in seconds, to keep a cached result in memory.
+            Enables to query again the geocoder in case its database, or algorithm,
+            has changed. Default is 30 days.
     """
 
     # Please keep the attributes sorted (Sphinx sorts them in the rendered
@@ -204,6 +207,7 @@ class options:
     default_user_agent = _DEFAULT_USER_AGENT
     default_cache = True
     default_cache_expire = _DEFAULT_CACHE_EXPIRE
+
 
 # Create an object which `repr` returns 'DEFAULT_SENTINEL'. Sphinx (docs) uses
 # this value when generating method's signature.
@@ -278,31 +282,58 @@ class Geocoder:
                 "Adapter %r must extend either BaseSyncAdapter or BaseAsyncAdapter"
                 % (type(self.adapter),)
             )
-        
+
         if min_delay_seconds is not None:
             if self.__run_async:
-                self.__rate_limiter = AsyncRateLimiter(None, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
+                self.__rate_limiter = AsyncRateLimiter(
+                    None,
+                    min_delay_seconds=min_delay_seconds,
+                    max_retries=10,
+                    swallow_exceptions=True,
+                    return_value_on_exception=None)
             else:
-                self.__rate_limiter = RateLimiter(None, min_delay_seconds=min_delay_seconds, max_retries=10, swallow_exceptions=True, return_value_on_exception=None)
-            logger.debug("Using rate limiter with a delay of %s seconds", min_delay_seconds)
-        else: 
+                self.__rate_limiter = RateLimiter(
+                    None,
+                    min_delay_seconds=min_delay_seconds,
+                    max_retries=10,
+                    swallow_exceptions=True,
+                    return_value_on_exception=None)
+            logger.debug(
+                "Using rate limiter with a delay of %s seconds",
+                min_delay_seconds)
+        else:
             self.__rate_limiter = None
-        
+
         self.cache = None
         if diskcache_available:
             if isinstance(cache, Cache):
                 self.cache = cache
             elif cache is None or cache is True:
-                path = os.path.join(gettempdir(), "geocodepy", "cache", self.__class__.__name__)
-                logger.info("The cache for %s is located at %s", self.__class__.__name__, path)
-                self.cache = Cache(path, eviction_policy='least-frequently-used', statistics=logger.isEnabledFor(logging.INFO))
+                path = os.path.join(
+                    gettempdir(),
+                    "geocodepy",
+                    "cache",
+                    self.__class__.__name__)
+                logger.info(
+                    "The cache for %s is located at %s",
+                    self.__class__.__name__,
+                    path)
+                self.cache = Cache(
+                    path,
+                    eviction_policy='least-frequently-used',
+                    statistics=logger.isEnabledFor(
+                        logging.INFO))
             if self.cache is not None:
                 # invalidate cached results at init, to save space and get quicker results
                 self.cache.expire()
                 size = len(self.cache)
                 if size > 0:
-                    logger.info("The cache for %s already contains %s items", self.__class__.__name__, size)
-            self.cache_expire = options.default_cache_expire if cache_expire is None else int(cache_expire)
+                    logger.info(
+                        "The cache for %s already contains %s items",
+                        self.__class__.__name__,
+                        size)
+            self.cache_expire = (options.default_cache_expire if cache_expire is None
+                                 else int(cache_expire))
         elif cache is not None:
             raise ConfigurationError("please install diskcache to activate cache")
 
@@ -314,11 +345,13 @@ class Geocoder:
         if self.cache is None:
             return False
         return url in self.cache
-        
+
     def geocode_batch(self, addresses, **kwargs):
         """
-        Batch geocoding. The default implement just calls sequentially the geocoder.geocode method for each address.
-        Some geocoders may implement a more efficient batch geocoding method if they support a native batch geocoding method.
+        Batch geocoding. The default implement just calls sequentially
+        the geocoder.geocode method for each address.
+        Some geocoders may implement a more efficient batch geocoding method
+        if they support a native batch geocoding method.
 
         :param float min_delay_seconds:
             The minimum delay between each geocoding request.
@@ -436,18 +469,22 @@ class Geocoder:
 
         try:
             result = self.cache.get(url, None) if self.cache is not None else None
-            if result is None :
+            if result is None:
                 # the result was not cached, we need to call the geocoder
                 if self.__rate_limiter is None:
                     # no rate limiter, we can call the geocoder directly
                     if is_json:
-                        result = self.adapter.get_json(url, timeout=timeout, headers=req_headers)
+                        result = self.adapter.get_json(
+                            url, timeout=timeout, headers=req_headers)
                     else:
-                        result = self.adapter.get_text(url, timeout=timeout, headers=req_headers)
+                        result = self.adapter.get_text(
+                            url, timeout=timeout, headers=req_headers)
                 else:
                     # we have a rate limiter, we need to wrap the call to the geocoder
-                    self.__rate_limiter.func = self.adapter.get_json if is_json else self.adapter.get_text
-                    result = self.__rate_limiter(url, timeout=timeout, headers=req_headers)
+                    self.__rate_limiter.func = (self.adapter.get_json if is_json
+                                                else self.adapter.get_text)
+                    result = self.__rate_limiter(
+                        url, timeout=timeout, headers=req_headers)
 
             if self.__run_async:
                 async def fut():
@@ -505,7 +542,8 @@ class Geocoder:
                 hits, misses = self.cache.stats(enable=False, reset=True)
                 self.cache.expire()
                 logger.info(
-                    'Closing cache for %s: %s hits, %s misses. The cache contains %s items for %s Mb, stored in %s',
+                    'Closing cache for %s: %s hits, %s misses. '
+                    'The cache contains %s items for %s Mb, stored in %s',
                     self.__class__.__name__,
                     hits,
                     misses,
@@ -522,7 +560,6 @@ class Geocoder:
 
     # def reverse(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
     #     raise NotImplementedError()
-
 
 
 def _format_coordinate(coordinate):
