@@ -334,7 +334,7 @@ class Geocoder:
                         size)
             self.cache_expire = (options.default_cache_expire if cache_expire is None
                                  else int(cache_expire))
-        elif cache is not None:
+        elif cache is not None and cache is not False:
             raise ConfigurationError("please install diskcache to activate cache")
 
     def clear_cache(self):
