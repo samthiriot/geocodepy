@@ -6,7 +6,7 @@ Welcome to GeoPy's documentation!
    :align: center
    :alt: GeoPy logo
 
-:Documentation: https://geopy.readthedocs.io/
+:Documentation: https://geocodepy.readthedocs.io/
 :Source Code: https://github.com/geopy/geopy
 :Stack Overflow: https://stackoverflow.com/questions/tagged/geopy
 :GIS Stack Exchange: https://gis.stackexchange.com/questions/tagged/geopy
@@ -34,23 +34,23 @@ Installation
 Geocoders
 ~~~~~~~~~
 
-.. automodule:: geopy.geocoders
+.. automodule:: geocodepy.geocoders
    :members: __doc__
 
 Accessing Geocoders
 -------------------
 
 The typical way of retrieving a geocoder class is to make an import
-from ``geopy.geocoders`` package::
+from ``geocodepy.geocoders`` package::
 
-    from geopy.geocoders import Nominatim
+    from geocodepy.geocoders import Nominatim
 
-.. autofunction:: geopy.geocoders.get_geocoder_for_service
+.. autofunction:: geocodepy.geocoders.get_geocoder_for_service
 
 Default Options Object
 ----------------------
 
-.. autoclass:: geopy.geocoders.options
+.. autoclass:: geocodepy.geocoders.options
    :members:
    :undoc-members:
 
@@ -65,14 +65,14 @@ geocoding requests to a Geocoding service, which might be throttled
 by the service (e.g. by returning `Too Many Requests` 429 HTTP error
 or timing out).
 
-:mod:`geopy.extra.rate_limiter` classes provide a convenient
+:mod:`geocodepy.extra.rate_limiter` classes provide a convenient
 wrapper, which can be used to automatically add delays between geocoding
 calls to reduce the load on the Geocoding service. Also it can retry
 failed requests and swallow errors for individual rows.
 
 If you're having the `Too Many Requests` error, you may try the following:
 
-- Use :mod:`geopy.extra.rate_limiter` with non-zero
+- Use :mod:`geocodepy.extra.rate_limiter` with non-zero
   ``min_delay_seconds``.
 - Try a different Geocoding service (please consult with their ToS first,
   as some services prohibit bulk geocoding).
@@ -83,21 +83,21 @@ If you're having the `Too Many Requests` error, you may try the following:
 Rate Limiter
 ++++++++++++
 
-.. automodule:: geopy.extra.rate_limiter
+.. automodule:: geocodepy.extra.rate_limiter
    :members: __doc__
 
-.. autoclass:: geopy.extra.rate_limiter.RateLimiter
+.. autoclass:: geocodepy.extra.rate_limiter.RateLimiter
 
    .. automethod:: __init__
 
-.. autoclass:: geopy.extra.rate_limiter.AsyncRateLimiter
+.. autoclass:: geocodepy.extra.rate_limiter.AsyncRateLimiter
 
    .. automethod:: __init__
 
 ArcGIS
 ------
 
-.. autoclass:: geopy.geocoders.ArcGIS
+.. autoclass:: geocodepy.geocoders.ArcGIS
    :members:
 
    .. automethod:: __init__
@@ -105,7 +105,7 @@ ArcGIS
 AzureMaps
 ---------
 
-.. autoclass:: geopy.geocoders.AzureMaps
+.. autoclass:: geocodepy.geocoders.AzureMaps
    :members:
    :inherited-members:
    :show-inheritance:
@@ -115,7 +115,7 @@ AzureMaps
 Baidu
 -----
 
-.. autoclass:: geopy.geocoders.Baidu
+.. autoclass:: geocodepy.geocoders.Baidu
    :members:
 
    .. automethod:: __init__
@@ -123,7 +123,7 @@ Baidu
 BaiduV3
 -------
 
-.. autoclass:: geopy.geocoders.BaiduV3
+.. autoclass:: geocodepy.geocoders.BaiduV3
    :members:
    :inherited-members:
    :show-inheritance:
@@ -133,7 +133,7 @@ BaiduV3
 BANFrance
 ---------
 
-.. autoclass:: geopy.geocoders.BANFrance
+.. autoclass:: geocodepy.geocoders.BANFrance
    :members:
 
    .. automethod:: __init__
@@ -141,7 +141,7 @@ BANFrance
 Bing
 ----
 
-.. autoclass:: geopy.geocoders.Bing
+.. autoclass:: geocodepy.geocoders.Bing
    :members:
 
    .. automethod:: __init__
@@ -149,7 +149,7 @@ Bing
 DataBC
 ------
 
-.. autoclass:: geopy.geocoders.DataBC
+.. autoclass:: geocodepy.geocoders.DataBC
    :members:
 
    .. automethod:: __init__
@@ -157,7 +157,7 @@ DataBC
 GeocodeEarth
 ------------
 
-.. autoclass:: geopy.geocoders.GeocodeEarth
+.. autoclass:: geocodepy.geocoders.GeocodeEarth
    :members:
    :inherited-members:
    :show-inheritance:
@@ -174,7 +174,7 @@ GeocodeFarm
 Geocodio
 --------
 
-.. autoclass:: geopy.geocoders.Geocodio
+.. autoclass:: geocodepy.geocoders.Geocodio
    :members:
 
    .. automethod:: __init__
@@ -182,7 +182,7 @@ Geocodio
 Geokeo
 ------------
 
-.. autoclass:: geopy.geocoders.Geokeo
+.. autoclass:: geocodepy.geocoders.Geokeo
    :members:
 
    .. automethod:: __init__
@@ -190,7 +190,7 @@ Geokeo
 Geolake
 --------
 
-.. autoclass:: geopy.geocoders.Geolake
+.. autoclass:: geocodepy.geocoders.Geolake
    :members:
 
    .. automethod:: __init__
@@ -198,7 +198,7 @@ Geolake
 GeoNames
 --------
 
-.. autoclass:: geopy.geocoders.GeoNames
+.. autoclass:: geocodepy.geocoders.GeoNames
    :members:
 
    .. automethod:: __init__
@@ -206,7 +206,7 @@ GeoNames
 GoogleV3
 --------
 
-.. autoclass:: geopy.geocoders.GoogleV3
+.. autoclass:: geocodepy.geocoders.GoogleV3
    :members:
 
    .. automethod:: __init__
@@ -214,7 +214,7 @@ GoogleV3
 HERE
 ----
 
-.. autoclass:: geopy.geocoders.Here
+.. autoclass:: geocodepy.geocoders.Here
    :members:
 
    .. automethod:: __init__
@@ -222,7 +222,7 @@ HERE
 HEREv7
 ------
 
-.. autoclass:: geopy.geocoders.HereV7
+.. autoclass:: geocodepy.geocoders.HereV7
    :members:
 
    .. automethod:: __init__
@@ -230,7 +230,7 @@ HEREv7
 IGNFrance
 ---------
 
-.. autoclass:: geopy.geocoders.IGNFrance
+.. autoclass:: geocodepy.geocoders.IGNFrance
    :members:
 
    .. automethod:: __init__
@@ -238,7 +238,7 @@ IGNFrance
 MapBox
 --------
 
-.. autoclass:: geopy.geocoders.MapBox
+.. autoclass:: geocodepy.geocoders.MapBox
    :members:
 
    .. automethod:: __init__
@@ -246,7 +246,7 @@ MapBox
 MapQuest
 --------
 
-.. autoclass:: geopy.geocoders.MapQuest
+.. autoclass:: geocodepy.geocoders.MapQuest
    :members:
 
    .. automethod:: __init__
@@ -254,7 +254,7 @@ MapQuest
 MapTiler
 --------
 
-.. autoclass:: geopy.geocoders.MapTiler
+.. autoclass:: geocodepy.geocoders.MapTiler
    :members:
 
    .. automethod:: __init__
@@ -262,7 +262,7 @@ MapTiler
 OpenCage
 --------
 
-.. autoclass:: geopy.geocoders.OpenCage
+.. autoclass:: geocodepy.geocoders.OpenCage
    :members:
 
    .. automethod:: __init__
@@ -270,7 +270,7 @@ OpenCage
 OpenMapQuest
 ------------
 
-.. autoclass:: geopy.geocoders.OpenMapQuest
+.. autoclass:: geocodepy.geocoders.OpenMapQuest
    :members:
    :inherited-members:
    :show-inheritance:
@@ -280,7 +280,7 @@ OpenMapQuest
 Nominatim
 ---------
 
-.. autoclass:: geopy.geocoders.Nominatim
+.. autoclass:: geocodepy.geocoders.Nominatim
    :members:
 
    .. automethod:: __init__
@@ -288,7 +288,7 @@ Nominatim
 Pelias
 ------
 
-.. autoclass:: geopy.geocoders.Pelias
+.. autoclass:: geocodepy.geocoders.Pelias
    :members:
 
    .. automethod:: __init__
@@ -296,7 +296,7 @@ Pelias
 Photon
 ------
 
-.. autoclass:: geopy.geocoders.Photon
+.. autoclass:: geocodepy.geocoders.Photon
    :members:
 
    .. automethod:: __init__
@@ -304,7 +304,7 @@ Photon
 PickPoint
 ---------
 
-.. autoclass:: geopy.geocoders.PickPoint
+.. autoclass:: geocodepy.geocoders.PickPoint
    :members:
    :inherited-members:
    :show-inheritance:
@@ -314,7 +314,7 @@ PickPoint
 LiveAddress
 -----------
 
-.. autoclass:: geopy.geocoders.LiveAddress
+.. autoclass:: geocodepy.geocoders.LiveAddress
    :members:
 
    .. automethod:: __init__
@@ -322,7 +322,7 @@ LiveAddress
 TomTom
 ------
 
-.. autoclass:: geopy.geocoders.TomTom
+.. autoclass:: geocodepy.geocoders.TomTom
    :members:
 
    .. automethod:: __init__
@@ -330,7 +330,7 @@ TomTom
 What3Words
 ----------
 
-.. autoclass:: geopy.geocoders.What3Words
+.. autoclass:: geocodepy.geocoders.What3Words
    :members:
 
    .. automethod:: __init__
@@ -338,7 +338,7 @@ What3Words
 What3WordsV3
 ------------
 
-.. autoclass:: geopy.geocoders.What3WordsV3
+.. autoclass:: geocodepy.geocoders.What3WordsV3
    :members:
 
    .. automethod:: __init__
@@ -346,7 +346,7 @@ What3WordsV3
 Woosmap
 ------------
 
-.. autoclass:: geopy.geocoders.Woosmap
+.. autoclass:: geocodepy.geocoders.Woosmap
    :members:
 
    .. automethod:: __init__
@@ -354,7 +354,7 @@ Woosmap
 Yandex
 ------
 
-.. autoclass:: geopy.geocoders.Yandex
+.. autoclass:: geocodepy.geocoders.Yandex
    :members:
 
    .. automethod:: __init__
@@ -362,116 +362,116 @@ Yandex
 Calculating Distance
 ~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: geopy.distance
+.. automodule:: geocodepy.distance
    :members: __doc__
 
-.. autofunction:: geopy.distance.lonlat
+.. autofunction:: geocodepy.distance.lonlat
 
-.. autoclass:: geopy.distance.Distance
+.. autoclass:: geocodepy.distance.Distance
    :members: __init__, destination
 
-.. autoclass:: geopy.distance.geodesic
+.. autoclass:: geocodepy.distance.geodesic
    :show-inheritance:
 
-.. autoclass:: geopy.distance.great_circle
+.. autoclass:: geocodepy.distance.great_circle
    :show-inheritance:
 
 Data
 ~~~~
 
-.. autoclass:: geopy.location.Location
+.. autoclass:: geocodepy.location.Location
     :members: address, latitude, longitude, altitude, point, raw
 
-.. autoclass:: geopy.point.Point
+.. autoclass:: geocodepy.point.Point
     :members:
 
     .. automethod:: __new__
 
-.. autoclass:: geopy.timezone.Timezone
+.. autoclass:: geocodepy.timezone.Timezone
     :members: pytz_timezone, raw
 
 Units Conversion
 ~~~~~~~~~~~~~~~~
 
-.. automodule:: geopy.units
+.. automodule:: geocodepy.units
     :members:
 
 Exceptions
 ~~~~~~~~~~
 
-.. autoclass:: geopy.exc.GeopyError
+.. autoclass:: geocodepy.exc.GeopyError
     :show-inheritance:
 
-.. autoclass:: geopy.exc.ConfigurationError
+.. autoclass:: geocodepy.exc.ConfigurationError
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderServiceError
+.. autoclass:: geocodepy.exc.GeocoderServiceError
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderQueryError
+.. autoclass:: geocodepy.exc.GeocoderQueryError
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderQuotaExceeded
+.. autoclass:: geocodepy.exc.GeocoderQuotaExceeded
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderRateLimited
+.. autoclass:: geocodepy.exc.GeocoderRateLimited
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderAuthenticationFailure
+.. autoclass:: geocodepy.exc.GeocoderAuthenticationFailure
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderInsufficientPrivileges
+.. autoclass:: geocodepy.exc.GeocoderInsufficientPrivileges
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderTimedOut
+.. autoclass:: geocodepy.exc.GeocoderTimedOut
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderUnavailable
+.. autoclass:: geocodepy.exc.GeocoderUnavailable
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderParseError
+.. autoclass:: geocodepy.exc.GeocoderParseError
     :show-inheritance:
 
-.. autoclass:: geopy.exc.GeocoderNotFound
+.. autoclass:: geocodepy.exc.GeocoderNotFound
     :show-inheritance:
 
 Adapters
 ~~~~~~~~
 
-.. automodule:: geopy.adapters
+.. automodule:: geocodepy.adapters
     :members: __doc__
 
 Supported Adapters
 ------------------
 
-.. autoclass:: geopy.adapters.RequestsAdapter
+.. autoclass:: geocodepy.adapters.RequestsAdapter
     :show-inheritance:
 
-.. autoclass:: geopy.adapters.URLLibAdapter
+.. autoclass:: geocodepy.adapters.URLLibAdapter
     :show-inheritance:
 
-.. autoclass:: geopy.adapters.AioHTTPAdapter
+.. autoclass:: geocodepy.adapters.AioHTTPAdapter
     :show-inheritance:
 
 
 Base Classes
 ------------
 
-.. autoclass:: geopy.adapters.AdapterHTTPError
+.. autoclass:: geocodepy.adapters.AdapterHTTPError
     :show-inheritance:
 
     .. automethod:: __init__
 
-.. autoclass:: geopy.adapters.BaseAdapter
+.. autoclass:: geocodepy.adapters.BaseAdapter
     :members:
 
     .. automethod:: __init__
 
-.. autoclass:: geopy.adapters.BaseSyncAdapter
+.. autoclass:: geocodepy.adapters.BaseSyncAdapter
     :show-inheritance:
     :members:
 
-.. autoclass:: geopy.adapters.BaseAsyncAdapter
+.. autoclass:: geocodepy.adapters.BaseAsyncAdapter
     :show-inheritance:
     :members:
 
@@ -499,15 +499,15 @@ are still being made in minor releases, such as:
   affect anyone, unless they extend geocoder classes or use undocumented
   features or monkey-patch anything. If you believe that something is
   missing in geopy, please consider opening an issue or providing
-  a patch/PR instead of hacking around geopy.
+  a patch/PR instead of hacking around geocodepy.
 
 - Geocoding services sometimes introduce new APIs and deprecate the previous
   ones. We try to upgrade without breaking the geocoder's API interface,
-  but the :attr:`geopy.location.Location.raw` value might change in a
+  but the :attr:`geocodepy.location.Location.raw` value might change in a
   backwards-incompatible way.
 
 - Behavior for invalid input and peculiar edge cases might be altered.
-  For example, :class:`geopy.point.Point` instances previously did
+  For example, :class:`geocodepy.point.Point` instances previously did
   coordinate values normalization, though it's not documented, and it was
   completely wrong for the latitudes outside the `[-90; 90]` range.
   So instead of using an incorrectly normalized value for latitude,

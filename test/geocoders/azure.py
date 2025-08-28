@@ -1,4 +1,4 @@
-from geopy.geocoders import AzureMaps
+from geocodepy.geocoders import AzureMaps
 from test.geocoders.tomtom import BaseTestTomTom
 from test.geocoders.util import env
 

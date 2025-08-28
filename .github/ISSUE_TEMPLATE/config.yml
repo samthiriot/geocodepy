@@ -21,4 +21,4 @@ contact_links:
   url: https://github.com/geopy/geopy/blob/master/CONTRIBUTING.md
   about: |
     See CONTRIBUTING.md for more details on how issues and PRs
-    are handled in geopy.
+    are handled in geocodepy.

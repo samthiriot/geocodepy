@@ -1,7 +1,7 @@
 import pytest
 
-from geopy.geocoders import MapBox
-from geopy.point import Point
+from geocodepy.geocoders import MapBox
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 

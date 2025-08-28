@@ -1,7 +1,7 @@
 import pytest
 
-from geopy.geocoders import Geokeo
-from geopy.point import Point
+from geocodepy.geocoders import Geokeo
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 

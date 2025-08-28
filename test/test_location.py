@@ -1,8 +1,8 @@
 import pickle
 import unittest
 
-from geopy.location import Location
-from geopy.point import Point
+from geocodepy.location import Location
+from geocodepy.point import Point
 
 GRAND_CENTRAL_STR = "89 E 42nd St New York, NY 10017"
 

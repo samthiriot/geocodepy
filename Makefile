@@ -1,4 +1,4 @@
-version := $(shell python -c 'from geopy import __version__; print(__version__)')
+version := $(shell python -c 'from geocodepy import __version__; print(__version__)')
 
 .PHONY: venv
 venv:
@@ -12,14 +12,14 @@ develop:
 
 .PHONY: lint lint-flake8 lint-isort
 lint-flake8:
-	flake8 geopy test *.py
+	flake8 geocodepy test *.py
 lint-isort:
-	isort --check-only geopy test *.py
+	isort --check-only geocodepy test *.py
 lint: lint-flake8 lint-isort
 
 .PHONY: format
 format:
-	isort geopy test *.py
+	isort geocodepy test *.py
 
 .PHONY: test-local
 test-local:

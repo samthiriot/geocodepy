@@ -2,9 +2,9 @@ import warnings
 
 import pytest
 
-from geopy import exc
-from geopy.geocoders import Here, HereV7
-from geopy.point import Point
+from geocodepy import exc
+from geocodepy.geocoders import Here, HereV7
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 

@@ -2,7 +2,7 @@ import math
 import unittest
 import warnings
 
-from geopy.distance import (
+from geocodepy.distance import (
     EARTH_RADIUS,
     Distance,
     GeodesicDistance,
@@ -10,7 +10,7 @@ from geopy.distance import (
     distance,
     lonlat,
 )
-from geopy.point import Point
+from geocodepy.point import Point
 
 EARTH_CIRCUMFERENCE = 2 * math.pi * EARTH_RADIUS
 NORTH_POLE = Point(90, 0)

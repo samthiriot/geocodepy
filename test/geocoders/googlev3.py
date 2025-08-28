@@ -4,9 +4,9 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from geopy import exc
-from geopy.geocoders import GoogleV3
-from geopy.point import Point
+from geocodepy import exc
+from geocodepy.geocoders import GoogleV3
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 try:

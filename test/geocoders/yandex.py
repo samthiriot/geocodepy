@@ -1,7 +1,7 @@
 import pytest
 
-from geopy.exc import GeocoderInsufficientPrivileges
-from geopy.geocoders import Yandex
+from geocodepy.exc import GeocoderInsufficientPrivileges
+from geocodepy.geocoders import Yandex
 from test.geocoders.util import BaseTestGeocoder, env
 
 

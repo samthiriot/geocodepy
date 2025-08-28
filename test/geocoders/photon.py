@@ -1,5 +1,5 @@
-from geopy.geocoders import Photon
-from geopy.point import Point
+from geocodepy.geocoders import Photon
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder
 
 
@@ -27,7 +27,7 @@ class TestPhoton(BaseTestGeocoder):
     async def test_osm_tag(self):
         await self.geocode_run(
             {"query": "Freedom", "osm_tag": "tourism:artwork"},
-            {"latitude": 38.8898061, "longitude": -77.009088, "delta": 2.0},
+            {"latitude": 33.7490549, "longitude": -77.009088, "delta": 2.0},
         )
 
         await self.geocode_run(

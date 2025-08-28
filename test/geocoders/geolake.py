@@ -1,4 +1,4 @@
-from geopy.geocoders import Geolake
+from geocodepy.geocoders import Geolake
 from test.geocoders.util import BaseTestGeocoder, env
 
 

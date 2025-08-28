@@ -6,9 +6,9 @@ from unittest.mock import ANY, patch
 
 import pytest
 
-from geopy import exc
-from geopy.adapters import BaseAsyncAdapter
-from geopy.location import Location
+from geocodepy import exc
+from geocodepy.adapters import BaseAsyncAdapter
+from geocodepy.location import Location
 
 _env = {}
 try:
@@ -123,16 +123,17 @@ class BaseTestGeocoder(ABC):
         skiptest_on_errors=True
     ):
         """
-        For each payload, calls geocoder.geocode(**payload), then checks against `expected`.
+        For each payload, calls geocoder.geocode(**payload),
+        then checks against `expected`.
         """
         results = await self._make_request(
-                self.geocoder, 'geocode_batch',
-                skiptest_on_errors=skiptest_on_errors,
-                **payloads,
-            )
+            self.geocoder, 'geocode_batch',
+            skiptest_on_errors=skiptest_on_errors,
+            **payloads,
+        )
         for result, expected in zip(results, expecteds):
             self._verify_request(result, exactly_one=payloads.get('exactly_one', True),
-                             **expected)
+                                 **expected)
         return results
 
     async def reverse_run(

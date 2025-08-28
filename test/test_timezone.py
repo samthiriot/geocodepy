@@ -4,7 +4,7 @@ import unittest
 
 import pytest
 
-from geopy.timezone import Timezone, from_fixed_gmt_offset, from_timezone_name
+from geocodepy.timezone import Timezone, from_fixed_gmt_offset, from_timezone_name
 
 try:
     import pytz

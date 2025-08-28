@@ -4,13 +4,13 @@ from unittest.mock import patch, sentinel
 
 import pytest
 
-import geopy.geocoders
-import geopy.geocoders.base
-from geopy.adapters import BaseAsyncAdapter, BaseSyncAdapter
-from geopy.exc import GeocoderNotFound, GeocoderQueryError
-from geopy.geocoders import GoogleV3, get_geocoder_for_service
-from geopy.geocoders.base import Geocoder, _synchronized
-from geopy.point import Point
+import geocodepy.geocoders
+import geocodepy.geocoders.base
+from geocodepy.adapters import BaseAsyncAdapter, BaseSyncAdapter
+from geocodepy.exc import GeocoderNotFound, GeocoderQueryError
+from geocodepy.geocoders import GoogleV3, get_geocoder_for_service
+from geocodepy.geocoders.base import Geocoder, _synchronized
+from geocodepy.point import Point
 
 
 class DummySyncAdapter(BaseSyncAdapter):
@@ -68,7 +68,7 @@ class GeocoderTestCase(unittest.TestCase):
         assert user_agent == geocoder.headers['User-Agent']
         assert adapter is geocoder.adapter
 
-    @patch.object(geopy.geocoders.options, 'default_adapter_factory',
+    @patch.object(geocodepy.geocoders.options, 'default_adapter_factory',
                   DummySyncAdapter)
     def test_init_with_defaults(self):
         attr_to_option = {
@@ -81,18 +81,18 @@ class GeocoderTestCase(unittest.TestCase):
         geocoder = Geocoder(cache=False)
         for geocoder_attr, options_attr in attr_to_option.items():
             assert (
-                getattr(geopy.geocoders.options, options_attr) ==
+                getattr(geocodepy.geocoders.options, options_attr) ==
                 getattr(geocoder, geocoder_attr)
             )
         assert (
-            geopy.geocoders.options.default_user_agent ==
+            geocodepy.geocoders.options.default_user_agent ==
             geocoder.headers['User-Agent']
         )
         assert DummySyncAdapter is type(geocoder.adapter)  # noqa
 
-    @patch.object(geopy.geocoders.options, 'default_proxies', {'https': '192.0.2.0'})
-    @patch.object(geopy.geocoders.options, 'default_timeout', 10)
-    @patch.object(geopy.geocoders.options, 'default_ssl_context',
+    @patch.object(geocodepy.geocoders.options, 'default_proxies', {'https': '192.0.2.0'})
+    @patch.object(geocodepy.geocoders.options, 'default_timeout', 10)
+    @patch.object(geocodepy.geocoders.options, 'default_ssl_context',
                   sentinel.some_ssl_context)
     def test_init_with_none_overrides_default(self):
         geocoder = Geocoder(proxies=None, timeout=None, ssl_context=None, cache=False)
@@ -100,7 +100,7 @@ class GeocoderTestCase(unittest.TestCase):
         assert geocoder.timeout is None
         assert geocoder.ssl_context is None
 
-    @patch.object(geopy.geocoders.options, 'default_user_agent',
+    @patch.object(geocodepy.geocoders.options, 'default_user_agent',
                   'mocked_user_agent/0.0.0')
     def test_user_agent_default(self):
         geocoder = Geocoder(cache=False)
@@ -113,7 +113,7 @@ class GeocoderTestCase(unittest.TestCase):
         )
         assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
 
-    @patch.object(geopy.geocoders.options, 'default_timeout', 12)
+    @patch.object(geocodepy.geocoders.options, 'default_timeout', 12)
     def test_call_geocoder_timeout(self):
         url = 'spam://ham/eggs'
 
@@ -139,7 +139,7 @@ class GeocoderTestCase(unittest.TestCase):
         with ExitStack() as stack:
             mock_adapter = stack.enter_context(
                 patch.object(
-                    geopy.geocoders.base.options,
+                    geocodepy.geocoders.base.options,
                     'default_adapter_factory',
                     return_value=DummySyncAdapter(proxies=None, ssl_context=None),
                 )

@@ -1,4 +1,4 @@
-from geopy.geocoders import TomTom
+from geocodepy.geocoders import TomTom
 from test.geocoders.util import BaseTestGeocoder, env
 
 

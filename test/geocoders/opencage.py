@@ -1,11 +1,11 @@
 import pytest
 
-from geopy.exc import (
+from geocodepy.exc import (
     GeocoderInsufficientPrivileges,
     GeocoderQuotaExceeded,
     GeocoderRateLimited,
 )
-from geopy.geocoders import OpenCage
+from geocodepy.geocoders import OpenCage
 from test.geocoders.util import BaseTestGeocoder, env
 
 

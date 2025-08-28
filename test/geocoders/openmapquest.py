@@ -1,4 +1,4 @@
-from geopy.geocoders import OpenMapQuest
+from geocodepy.geocoders import OpenMapQuest
 from test.geocoders.nominatim import BaseTestNominatim
 from test.geocoders.util import env
 

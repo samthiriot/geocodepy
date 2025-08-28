@@ -7,20 +7,20 @@ from urllib.request import getproxies, urlopen
 
 import pytest
 
-import geopy.geocoders
-from geopy.adapters import (
+import geocodepy.geocoders
+from geocodepy.adapters import (
     AdapterHTTPError,
     AioHTTPAdapter,
     BaseAsyncAdapter,
     RequestsAdapter,
     URLLibAdapter,
 )
-from geopy.exc import (
+from geocodepy.exc import (
     GeocoderAuthenticationFailure,
     GeocoderParseError,
     GeocoderServiceError,
 )
-from geopy.geocoders.base import Geocoder
+from geocodepy.geocoders.base import Geocoder
 from test.proxy_server import HttpServerThread, ProxyServerThread
 
 CERT_SELFSIGNED_CA = os.path.join(os.path.dirname(__file__), "..", "selfsigned_ca.pem")
@@ -129,7 +129,7 @@ def remote_website_http_404(remote_website_http):
 def adapter_factory(request):
     adapter_factory = request.param
     with patch.object(
-        geopy.geocoders.options, "default_adapter_factory", adapter_factory
+        geocodepy.geocoders.options, "default_adapter_factory", adapter_factory
     ):
         yield adapter_factory
 
@@ -155,7 +155,7 @@ async def make_dummy_async_geocoder(**kwargs):
 async def test_not_available_adapters_raise(adapter_cls):
     # Note: this test is uselessly parametrized with `adapter_factory`.
     with patch.object(
-        geopy.geocoders.options, "default_adapter_factory", adapter_cls
+        geocodepy.geocoders.options, "default_adapter_factory", adapter_cls
     ):
         with pytest.raises(ImportError):
             async with make_dummy_async_geocoder():

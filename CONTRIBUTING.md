@@ -2,16 +2,16 @@
 
 ## Reporting issues
 
-If you caught an exception from geopy please try to Google the error first.
+If you caught an exception from geocodepy please try to Google the error first.
 There is a great chance that it has already been discussed somewhere
 and solutions have been provided (usually on GitHub or on Stack Overflow).
 
 Before reporting an issue please ensure that you have tried
-to get the answer from the doc: https://geopy.readthedocs.io/.
+to get the answer from the doc: https://geocodepy.readthedocs.io/.
 
 Keep in mind that if a specific geocoding service's API is not behaving
 correctly then it probably won't be helpful to report that issue
-here, see https://geopy.readthedocs.io/en/latest/#geopy-is-not-a-service
+here, see https://geocodepy.readthedocs.io/en/latest/#geopy-is-not-a-service
 
 The following resources are available for your input:
 
@@ -99,7 +99,7 @@ Tests in CI from forks and PRs run in `test-local` mode only, i.e. no network
 requests are performed. Full test suite with network requests is run only
 for pushes to branches by maintainers. This
 helps to reduce load on the geocoding services and save some quotas associated
-with the credentials used by geopy. It means that PR builds won't actually test
+with the credentials used by geocodepy. It means that PR builds won't actually test
 network requests. Code changing a geocoder should be tested locally.
 But it's acceptable to not test such code if obtaining the required credentials 
 seems problematic: just leave a note
@@ -144,7 +144,7 @@ A checklist for adding a new geocoder:
     `geopy/geocoders` package. Please look around to make sure that you're
     not reimplementing something that's already there! For example, if you're
     adding a Nominatim-based service, then your new geocoder class should
-    probably extend the `geopy.geocoders.Nominatim` class.
+    probably extend the `geocodepy.geocoders.Nominatim` class.
 
 2.  Follow the instructions in the `geopy/geocoders/__init__.py` module for
     adding the required imports.

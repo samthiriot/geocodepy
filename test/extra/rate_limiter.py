@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch, sentinel
 
 import pytest
 
-from geopy.exc import GeocoderQuotaExceeded, GeocoderServiceError
-from geopy.extra.rate_limiter import AsyncRateLimiter, RateLimiter
+from geocodepy.exc import GeocoderQuotaExceeded, GeocoderServiceError
+from geocodepy.extra.rate_limiter import AsyncRateLimiter, RateLimiter
 
 
 @pytest.fixture(params=[False, True])

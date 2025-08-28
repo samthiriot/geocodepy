@@ -1,8 +1,8 @@
-from geopy.geocoders import IGNFrance
+from geocodepy.geocoders import IGNFrance
 
 import logging
 
-from geopy.geocoders.nominatim import Nominatim
+from geocodepy.geocoders.nominatim import Nominatim
 
 logging.basicConfig(level=logging.INFO)
 

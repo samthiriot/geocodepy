@@ -6,20 +6,20 @@ import docutils.core
 import docutils.utils
 import pytest
 
-import geopy.geocoders
-from geopy.geocoders.base import DEFAULT_SENTINEL, Geocoder
+import geocodepy.geocoders
+from geocodepy.geocoders.base import DEFAULT_SENTINEL, Geocoder
 
 skip_modules = [
-    "geopy.geocoders.base",  # doesn't contain actual geocoders
-    "geopy.geocoders.googlev3",  # deprecated
-    "geopy.geocoders.osm",  # deprecated
+    "geocodepy.geocoders.base",  # doesn't contain actual geocoders
+    "geocodepy.geocoders.googlev3",  # deprecated
+    "geocodepy.geocoders.osm",  # deprecated
 ]
 
 geocoder_modules = sorted(
     [
         importlib.import_module(name)
         for _, name, _ in pkgutil.iter_modules(
-            geopy.geocoders.__path__, "geopy.geocoders."
+            geocodepy.geocoders.__path__, "geocodepy.geocoders."
         )
         if name not in skip_modules
     ],
@@ -114,28 +114,29 @@ def assert_rst(sig, doc, allowed_rtypes=(None,)):
 
 def test_all_geocoders_are_exported_from_package():
     expected = {cls.__name__ for cls in geocoder_classes}
-    actual = set(dir(geopy.geocoders))
+    actual = set(dir(geocodepy.geocoders))
     not_exported = expected - actual
     assert not not_exported, (
         "These geocoders must be exported (via imports) "
-        "in geopy/geocoders/__init__.py"
+        "in geocodepy/geocoders/__init__.py"
     )
 
 
 def test_all_geocoders_are_listed_in_all():
     expected = {cls.__name__ for cls in geocoder_classes}
-    actual = set(geopy.geocoders.__all__)
+    actual = set(geocodepy.geocoders.__all__)
     not_exported = expected - actual
     assert not not_exported, (
         "These geocoders must be listed in the `__all__` tuple "
-        "in geopy/geocoders/__init__.py"
+        "in geocodepy/geocoders/__init__.py"
     )
 
 
 def test_all_geocoders_are_listed_in_service_to_geocoder():
-    assert set(geocoder_classes) == set(geopy.geocoders.SERVICE_TO_GEOCODER.values()), (
+    assert (set(geocoder_classes) ==
+            set(geocodepy.geocoders.SERVICE_TO_GEOCODER.values())), (
         "All geocoders must be listed in the `SERVICE_TO_GEOCODER` dict "
-        "in geopy/geocoders/__init__.py"
+        "in geocodepy/geocoders/__init__.py"
     )
 
 
@@ -212,9 +213,9 @@ def test_geocode_method_signature(geocoder_cls):
         sig,
         method.__doc__,
         allowed_rtypes=[
-            ":class:`geopy.location.Location` or a list of them, "
+            ":class:`geocodepy.location.Location` or a list of them, "
             "if ``exactly_one=False``.",  # what3words
-            "``None``, :class:`geopy.location.Location` or a list of them, "
+            "``None``, :class:`geocodepy.location.Location` or a list of them, "
             "if ``exactly_one=False``.",
         ],
     )
@@ -255,9 +256,9 @@ def test_reverse_method_signature(geocoder_cls):
         sig,
         method.__doc__,
         allowed_rtypes=[
-            ":class:`geopy.location.Location` or a list of them, "  # what3words
+            ":class:`geocodepy.location.Location` or a list of them, "  # what3words
             "if ``exactly_one=False``.",
-            "``None``, :class:`geopy.location.Location` or a list of them, "
+            "``None``, :class:`geocodepy.location.Location` or a list of them, "
             "if ``exactly_one=False``.",
         ],
     )
@@ -293,8 +294,8 @@ def test_reverse_timezone_method_signature(geocoder_cls):
         sig,
         method.__doc__,
         allowed_rtypes=[
-            ":class:`geopy.timezone.Timezone`.",
-            "``None`` or :class:`geopy.timezone.Timezone`.",
+            ":class:`geocodepy.timezone.Timezone`.",
+            "``None`` or :class:`geocodepy.timezone.Timezone`.",
         ],
     )
 
@@ -314,6 +315,6 @@ def test_no_extra_public_methods(geocoder_cls):
         "geocode_batch"
     }
     assert methods <= allowed, (
-        "Geopy geocoders are currently allowed to only have these methods: %s, "
-        "but we found those: %s" % (allowed, methods-allowed)
+        "Geocodepy geocoders are currently allowed to only have these methods: %s, "
+        "but we found those: %s" % (allowed, methods - allowed)
     )

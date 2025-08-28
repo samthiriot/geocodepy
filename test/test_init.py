@@ -1,6 +1,6 @@
 from distutils.version import LooseVersion
 
-from geopy import __version__, __version_info__, get_version
+from geocodepy import __version__, __version_info__, get_version
 
 
 def test_version():

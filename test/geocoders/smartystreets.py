@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
-import geopy.geocoders
-from geopy.geocoders import LiveAddress
+import geocodepy.geocoders
+from geocodepy.geocoders import LiveAddress
 from test.geocoders.util import BaseTestGeocoder, env
 
 
@@ -17,7 +17,7 @@ class TestUnitLiveAddress:
         )
         assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
 
-    @patch.object(geopy.geocoders.options, 'default_scheme', 'http')
+    @patch.object(geocodepy.geocoders.options, 'default_scheme', 'http')
     def test_default_scheme_is_ignored(self):
         geocoder = LiveAddress(auth_id=self.dummy_id, auth_token=self.dummy_token)
         assert geocoder.scheme == 'https'

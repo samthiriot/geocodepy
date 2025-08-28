@@ -2,10 +2,10 @@ from unittest.mock import patch
 
 import pytest
 
-import geopy.exc
-import geopy.geocoders
-from geopy.geocoders import What3Words, What3WordsV3
-from geopy.geocoders.what3words import _check_query
+import geocodepy.exc
+import geocodepy.geocoders
+from geocodepy.geocoders import What3Words, What3WordsV3
+from geocodepy.geocoders.what3words import _check_query
 from test.geocoders.util import BaseTestGeocoder, env
 
 
@@ -19,7 +19,7 @@ class TestUnitWhat3Words:
         )
         assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
 
-    @patch.object(geopy.geocoders.options, 'default_scheme', 'http')
+    @patch.object(geocodepy.geocoders.options, 'default_scheme', 'http')
     def test_default_scheme_is_ignored(self):
         geocoder = What3Words(api_key=self.dummy_api_key)
         assert geocoder.scheme == 'https'
@@ -61,7 +61,7 @@ class BaseTestWhat3Words(BaseTestGeocoder):
         )
 
     async def test_empty_response(self):
-        with pytest.raises(geopy.exc.GeocoderQueryError):
+        with pytest.raises(geocodepy.exc.GeocoderQueryError):
             await self.geocode_run(
                 {"query": "definitely.not.existingiswearrrr"},
                 {},

@@ -1,4 +1,4 @@
-from geopy.geocoders import BANFrance
+from geocodepy.geocoders import BANFrance
 from test.geocoders.util import BaseTestGeocoder
 
 
@@ -37,7 +37,7 @@ class TestBANFrance(BaseTestGeocoder):
         assert 2 >= len(result)
 
     async def test_geocode_batch_addresses(self):
-        
+
         test_data = {
             "13 Rue de la Paix, 75002 Paris, France": {
                 "latitude": 48.86931,
@@ -55,10 +55,10 @@ class TestBANFrance(BaseTestGeocoder):
                 "latitude": 48.869397,
                 "longitude": 2.31688,
                 "address": "Rue de l'Elysée 75008 Paris"},
-            }
-    
+        }
+
         results = await self.geocode_batch_run(
             {"addresses": test_data.keys(), "exactly_one": True},
             test_data.values())
-        
+
         assert len(results) == len(test_data)

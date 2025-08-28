@@ -1,6 +1,29 @@
-geopy
+geocodepy
 =====
 
+This is a fork of the amazing geopy library which provides world-wide geocoding features, but is no more actively maintained.
+
+This library also intends to add support for additional geocoding features, including caching (in order not to query multiple times the same address) and batch geocoding.
+
+THIS A WORD IN PROGRESS. DO NOT USE IT (yet).
+
+
+Roadmap:
+
+General:
+* add generic support for batch geocoding 
+* add generic support for caching
+
+IGNFrance geocoder:
+* add support for batch geocoding
+* add filtering by city code, city name, etc.
+
+A word on performance:
+* install the diskcache library to enable caching. This will avoid querying the same address multiple times, and therefore save you time and money.
+
+
+OLD README:
+--------------------
 .. image:: https://img.shields.io/pypi/v/geopy.svg?style=flat-square
     :target: https://pypi.python.org/pypi/geopy/
     :alt: Latest Version
@@ -14,10 +37,10 @@ geopy
     :alt: License
 
 
-geopy is a Python client for several popular geocoding web
+geocodepy is a Python client for several popular geocoding web
 services.
 
-geopy makes it easy for Python developers to locate the coordinates of
+geocodepy makes it easy for Python developers to locate the coordinates of
 addresses, cities, countries, and landmarks across the globe using
 third-party geocoders and other data sources.
 
@@ -56,7 +79,7 @@ To geolocate a query to an address and coordinates:
 
 .. code:: pycon
 
-    >>> from geopy.geocoders import Nominatim
+    >>> from geocodepy.geocoders import Nominatim
     >>> geolocator = Nominatim(user_agent="specify_your_app_name_here")
     >>> location = geolocator.geocode("175 5th Avenue NYC")
     >>> print(location.address)
@@ -70,7 +93,7 @@ To find the address corresponding to a set of coordinates:
 
 .. code:: pycon
 
-    >>> from geopy.geocoders import Nominatim
+    >>> from geocodepy.geocoders import Nominatim
     >>> geolocator = Nominatim(user_agent="specify_your_app_name_here")
     >>> location = geolocator.reverse("52.509669, 13.376294")
     >>> print(location.address)
@@ -96,7 +119,7 @@ of :code:`(lat, lon)` tuples:
 
 .. code:: pycon
 
-    >>> from geopy.distance import geodesic
+    >>> from geocodepy.distance import geodesic
     >>> newport_ri = (41.49008, -71.312796)
     >>> cleveland_oh = (41.499498, -81.695391)
     >>> print(geodesic(newport_ri, cleveland_oh).miles)
@@ -106,7 +129,7 @@ Using great-circle distance, also taking pair of :code:`(lat, lon)` tuples:
 
 .. code:: pycon
 
-    >>> from geopy.distance import great_circle
+    >>> from geocodepy.distance import great_circle
     >>> newport_ri = (41.49008, -71.312796)
     >>> cleveland_oh = (41.499498, -81.695391)
     >>> print(great_circle(newport_ri, cleveland_oh).miles)

@@ -156,8 +156,8 @@ Breaking Changes
 Deprecations
 ~~~~~~~~~~~~
 
-- :class:`.GoogleV3` has been moved from ``geopy.geocoders.googlev3`` module
-  to ``geopy.geocoders.google``. The old module is still present for
+- :class:`.GoogleV3` has been moved from ``geocodepy.geocoders.googlev3`` module
+  to ``geocodepy.geocoders.google``. The old module is still present for
   backwards compatibility, but it will be removed in geopy 3. (:issue:`483`)
 
 Bugfixes
@@ -175,7 +175,7 @@ Code Improvements
 - Changed default exception type for HTTP code 408: now it is raised as
   :class:`.exc.GeocoderTimedOut` instead of a more
   generic :class:`.exc.GeocoderServiceError`. (:issue:`479`)
-- :mod:`geopy.exc`: extend more specific built-in exceptions where appropriate:
+- :mod:`geocodepy.exc`: extend more specific built-in exceptions where appropriate:
   classes :class:`.ConfigurationError`, :class:`.GeocoderQueryError`,
   :class:`.GeocoderNotFound` now extend :class:`ValueError`;
   :class:`.GeocoderRateLimited` and :class:`.GeocoderUnavailable`
@@ -251,20 +251,20 @@ all of them, then it should be safe to upgrade.
 New Features
 ~~~~~~~~~~~~
 
-- :mod:`geopy.adapters` module. Previously all geocoders used :mod:`urllib`
+- :mod:`geocodepy.adapters` module. Previously all geocoders used :mod:`urllib`
   for HTTP requests, which doesn't support keepalives. Adapters is
   a new mechanism which allows to use other HTTP client implementations.
 
   There are 3 implementations coming out of the box:
 
-  + :class:`geopy.adapters.RequestsAdapter` -- uses ``requests`` library
+  + :class:`geocodepy.adapters.RequestsAdapter` -- uses ``requests`` library
     which supports keepalives (thus it is significantly more effective
     than ``urllib``). It is used by default if ``requests`` package
     is installed.
-  + :class:`geopy.adapters.URLLibAdapter` -- uses ``urllib``, basically
+  + :class:`geocodepy.adapters.URLLibAdapter` -- uses ``urllib``, basically
     it provides the same behavior as in geopy 1.x. It is used by default if
     ``requests`` package is not installed.
-  + :class:`geopy.adapters.AioHTTPAdapter` -- uses ``aiohttp`` library.
+  + :class:`geocodepy.adapters.AioHTTPAdapter` -- uses ``aiohttp`` library.
 
 - Added optional asyncio support in all geocoders via
   :class:`.AioHTTPAdapter`, see the new :ref:`Async Mode <async_mode>`
@@ -278,16 +278,16 @@ Packaging Changes
 - Dropped support for Python 2.7 and 3.4.
 - New extras:
 
-  + ``geopy[requests]`` for :class:`geopy.adapters.RequestsAdapter`.
-  + ``geopy[aiohttp]`` for :class:`geopy.adapters.AioHTTPAdapter`.
+  + ``geopy[requests]`` for :class:`geocodepy.adapters.RequestsAdapter`.
+  + ``geopy[aiohttp]`` for :class:`geocodepy.adapters.AioHTTPAdapter`.
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
 
-- ``geopy.distance`` algorithms now raise ``ValueError`` for points with
+- ``geocodepy.distance`` algorithms now raise ``ValueError`` for points with
   different altitudes, because :ref:`altitude is ignored in calculations
   <distance_altitudes>`.
-- Removed ``geopy.distance.vincenty``, use :class:`geopy.distance.geodesic` instead.
+- Removed ``geocodepy.distance.vincenty``, use :class:`geocodepy.distance.geodesic` instead.
 - ``timeout=None`` now disables request timeout, previously
   a default timeout has been used in this case.
 - Removed ``GoogleV3.timezone``, use :meth:`.GoogleV3.reverse_timezone` instead.
@@ -308,7 +308,7 @@ Breaking Changes
   as a :class:`.Point`. Now a ``ValueError`` is raised in this case.
 - :class:`.Location` and :class:`.Timezone` classes no longer accept None
   for ``point`` and ``raw`` args.
-- :class:`.Nominatim` now raises :class:`geopy.exc.ConfigurationError` when
+- :class:`.Nominatim` now raises :class:`geocodepy.exc.ConfigurationError` when
   used with a default or sample user-agent.
 - :class:`.Point` now raises a ``ValueError`` if constructed from a single number.
   A zero longitude must be explicitly passed to avoid the error.
@@ -322,6 +322,6 @@ Breaking Changes
 Deprecations
 ~~~~~~~~~~~~
 
-- :class:`.Nominatim` has been moved from ``geopy.geocoders.osm`` module
-  to ``geopy.geocoders.nominatim``. The old module is still present for
+- :class:`.Nominatim` has been moved from ``geocodepy.geocoders.osm`` module
+  to ``geocodepy.geocoders.nominatim``. The old module is still present for
   backwards compatibility, but it will be removed in geopy 3.

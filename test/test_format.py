@@ -1,7 +1,7 @@
 import pytest
 
-from geopy.format import format_degrees
-from geopy.point import Point
+from geocodepy.format import format_degrees
+from geocodepy.point import Point
 
 
 @pytest.mark.parametrize(

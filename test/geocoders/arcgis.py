@@ -1,8 +1,8 @@
 import pytest
 
-from geopy import exc
-from geopy.geocoders import ArcGIS
-from geopy.point import Point
+from geocodepy import exc
+from geocodepy.geocoders import ArcGIS
+from geocodepy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 
@@ -23,7 +23,7 @@ class TestArcGIS(BaseTestGeocoder):
 
     async def test_missing_password_error(self):
         with pytest.raises(exc.ConfigurationError):
-            ArcGIS(username='a')
+            ArcGIS(username='a', cache=False)
 
     async def test_scheme_config_error(self):
         with pytest.raises(exc.ConfigurationError):
@@ -31,7 +31,8 @@ class TestArcGIS(BaseTestGeocoder):
                 username='a',
                 password='b',
                 referer='http://www.example.com',
-                scheme='http'
+                scheme='http',
+                cache=False
             )
 
     async def test_geocode(self):
