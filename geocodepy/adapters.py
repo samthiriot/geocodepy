@@ -18,7 +18,9 @@ import asyncio
 import contextlib
 import email
 import json
+from pathlib import Path
 import ssl
+import tempfile
 import time
 import warnings
 from socket import timeout as SocketTimeout
@@ -36,6 +38,7 @@ from urllib.request import (
 
 from geocodepy.exc import (
     GeocoderParseError,
+    GeocoderQueryError,
     GeocoderServiceError,
     GeocoderTimedOut,
     GeocoderUnavailable,
@@ -202,6 +205,35 @@ class BaseAdapter(abc.ABC):
 
         :param dict headers: A dict with custom HTTP request headers.
         """
+    @abc.abstractmethod
+    def post_csv(self, url, *, data, file, timeout, headers):
+        """
+        Make a POST request to the given URL, sending the provided data,
+        and return the response as either CSV or JSON, depending on the
+        content type of the response.
+
+        :param str url: The target URL.
+
+        :param dict data: The data to send in the POST request body.
+            This can be a dict, str, bytes, or any format supported by the adapter.
+
+        :param file: The file to send in the POST request body.
+            This can be a file-like object, a string, or a bytes object.
+
+        :param float timeout:
+            See :attr:`geocodepy.geocoders.options.default_timeout`.
+
+        :param dict headers: A dict with custom HTTP request headers.
+
+        :return: The parsed response, either as a list of dicts (for CSV)
+            or as a dict/list (for JSON), depending on the response content type.
+
+        :raises geocodepy.exc.GeocoderParseError: If the response cannot be parsed.
+        :raises geocodepy.adapters.AdapterHTTPError: If the response status is not successful.
+        :raises geocodepy.exc.GeocoderTimedOut: If the request times out.
+        :raises geocodepy.exc.GeocoderUnavailable: If the target host is unreachable.
+        :raises geocodepy.exc.GeocoderServiceError: For any other error.
+        """
 
 
 class BaseSyncAdapter(BaseAdapter):
@@ -338,6 +370,89 @@ class URLLibAdapter(BaseSyncAdapter):
                 )
 
         return text
+
+    def post_csv(self, url, *, data, timeout, headers):
+        """
+        Make a POST request to the given URL, sending the provided data,
+        and return the response as either CSV or JSON, depending on the
+        content type of the response.
+        """
+        req = Request(url=url, headers=headers, data=data if isinstance(data, (bytes, str)) else None, method="POST")
+        # If data is a dict, encode as application/x-www-form-urlencoded
+        if isinstance(data, dict):
+            import urllib.parse
+            encoded = urllib.parse.urlencode(data).encode("utf-8")
+            req.data = encoded
+            if "content-type" not in {k.lower() for k in headers}:
+                req.add_header("Content-Type", "application/x-www-form-urlencoded")
+        elif isinstance(data, str):
+            req.data = data.encode("utf-8")
+        elif isinstance(data, bytes):
+            req.data = data
+        elif data is not None:
+            raise GeocoderQueryError("Unsupported data type for POST: %s" % type(data))
+
+        try:
+            page = self.urlopen(req, timeout=timeout)
+        except Exception as error:
+            message = str(error.args[0]) if len(error.args) else str(error)
+            if isinstance(error, HTTPError):
+                code = error.getcode()
+                response_headers = {
+                    name.lower(): value
+                    for name, value in error.headers.items()
+                }
+                body = self._read_http_error_body(error)
+                raise AdapterHTTPError(
+                    message,
+                    status_code=code,
+                    headers=response_headers,
+                    text=body,
+                )
+            elif isinstance(error, URLError):
+                if "timed out" in message:
+                    raise GeocoderTimedOut("Service timed out")
+                elif "unreachable" in message:
+                    raise GeocoderUnavailable("Service not available")
+            elif isinstance(error, SocketTimeout):
+                raise GeocoderTimedOut("Service timed out")
+            elif isinstance(error, SSLError):
+                if "timed out" in message:
+                    raise GeocoderTimedOut("Service timed out")
+            raise GeocoderServiceError(message)
+        else:
+            text = self._decode_page(page)
+            status_code = page.getcode()
+            if status_code >= 400:
+                response_headers = {
+                    name.lower(): value
+                    for name, value in page.headers.items()
+                }
+                raise AdapterHTTPError(
+                    "Non-successful status code %s" % status_code,
+                    status_code=status_code,
+                    headers=response_headers,
+                    text=text,
+                )
+
+        # Determine content type
+        content_type = page.headers.get("Content-Type", "").lower()
+        if "application/json" in content_type or "json" in content_type:
+            try:
+                return json.loads(text)
+            except Exception:
+                raise GeocoderParseError("Could not parse JSON response:\n%s" % text)
+        elif "text/csv" in content_type or "application/csv" in content_type or "csv" in content_type:
+            import csv
+            from io import StringIO
+            try:
+                f = StringIO(text)
+                reader = csv.DictReader(f)
+                return list(reader)
+            except Exception:
+                raise GeocoderParseError("Could not parse CSV response:\n%s" % text)
+        else:
+            raise GeocoderParseError("Unknown response content type: %s" % content_type)
 
     def _read_http_error_body(self, error):
         try:
@@ -476,6 +591,76 @@ class RequestsAdapter(BaseSyncAdapter):
             raise GeocoderParseError(
                 "Could not deserialize using deserializer:\n%s" % resp.text
             )
+
+    def post_csv(self, url, *, data, file, timeout, headers):
+        """
+        Make a POST request to the given URL, sending the provided data,
+        and return the response as either CSV or JSON, depending on the
+        content type of the response.
+        """
+        # Prepare the data for the POST request
+        req_headers = headers.copy() if headers else {}
+        req_headers["accept"] = "text/csv"
+
+        try:
+            with open(file, "rb") as f:
+                resp = self.session.post(url,
+                                         data=data,
+                                         files={"data": ("togeocode.csv", f, "text/csv; charset=utf-8", {"Content-Transfer-Encoding": "binary"},), }, # "text/csv; charset=utf-8" 
+                                         timeout=timeout,
+                                         headers=req_headers,
+                                         stream=True
+                                         )
+                
+        except Exception as error:
+            message = str(error)
+            if isinstance(error, SocketTimeout):
+                raise GeocoderTimedOut("Service timed out")
+            elif isinstance(error, SSLError):
+                if "timed out" in message:
+                    raise GeocoderTimedOut("Service timed out")
+            elif isinstance(error, requests.ConnectionError):
+                if "unauthorized" in message.lower():
+                    raise GeocoderServiceError(message)
+                else:
+                    raise GeocoderUnavailable(message)
+            elif isinstance(error, requests.Timeout):
+                raise GeocoderTimedOut("Service timed out")
+            raise GeocoderServiceError(message)
+        else:
+            if resp.status_code >= 400:
+                raise AdapterHTTPError(
+                    "Non-successful status code %s" % resp.status_code,
+                    status_code=resp.status_code,
+                    headers=resp.headers,
+                    text=resp.text,
+                )
+
+        content_type = resp.headers.get("Content-Type", "").lower()
+        print("received content type:", content_type)
+        if content_type == "application/json":
+            try:
+                return resp.json()
+            except ValueError:
+                raise GeocoderParseError(
+                    "Could not deserialize using deserializer:\n%s" % resp.text
+                )
+        elif "text/csv" in content_type or "application/csv" in content_type:
+            # let's write the csv received to a temporary file
+            with tempfile.NamedTemporaryFile(delete=False,
+                                             prefix="addresses_geocoded_",
+                                             suffix=".csv",
+                                             mode='wb') as tmp_file:
+                for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                    tmp_file.write(chunk)
+                tmp_file.close()
+                return tmp_file.name
+        else:
+            # Fallback: try to parse as JSON, else return text
+            try:
+                return resp.json()
+            except Exception:
+                return resp.text
 
     def _request(self, url, *, timeout, headers):
         try:

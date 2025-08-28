@@ -1,3 +1,7 @@
+import csv
+import os
+import tempfile
+from typing import override
 import warnings
 from functools import partial
 from urllib.parse import urlencode
@@ -19,6 +23,7 @@ class IGNFrance(Geocoder):
 
     api_path = '/geocodage'
     geocode_path = '/search'
+    geocode_batch_path = '/search/csv'
     reverse_path = '/reverse'
 
     def __init__(
@@ -125,6 +130,9 @@ class IGNFrance(Geocoder):
         self.geocode_api = (
             '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.geocode_path)
         )
+        self.geocode_batch_api = (
+            '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.geocode_batch_path)
+        )
         self.reverse_api = (
             '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.reverse_path)
         )
@@ -191,6 +199,143 @@ class IGNFrance(Geocoder):
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
 
+    @override
+    def geocode_batch(self, addresses, exactly_one=True, **kwargs):
+        """
+        Batch geocoding. The default implement just calls sequentially
+        the geocoder.geocode method for each address.
+        Some geocoders may implement a more efficient batch geocoding method
+        if they support a native batch geocoding method.
+
+        :param float min_delay_seconds:
+            The minimum delay between each geocoding request.
+            If not provided, the geocoder will not wait between requests.
+
+        Additional parameters will be bassed to the geocoder.geocode method.
+        """
+        # TODO how to skip the results in cache?
+        callback = partial(self._parse_csv, exactly_one=exactly_one)
+        results = []
+        for tmp_file in self._write_csv(addresses, max_size=1024*1024*1): # accept 1Mb, the official limit is 50Mb
+
+            try:
+                print("written file", tmp_file.name)
+                res = self._call_geocoder(self.geocode_batch_api,
+                                          callback,
+                                          timeout=1024*1024*10,
+                                          file=tmp_file.name,
+                                          data={
+                                              "columns": "query",
+                                            #   "section": "",
+                                            #   "municipalitycode": "",
+                                            #   "number": "",
+                                            #   "lon": "",
+                                            #   "postcode": "",
+                                            #   "oldmunicipalitycode": "",
+                                            #   "citycode": "",
+                                            #   "type": "",
+                                            #   "result_columns": "",
+                                            #   "districtcode": "",
+                                            #   "category": "",
+                                            #   "departmentcode": "",
+                                            #   "sheet": "",
+                                            #   "lat": "",
+                                            #   "result_columns": "",
+                                            #   "indexes": "",
+
+                                          },
+                                          **kwargs)
+                results.extend(res)
+            finally:
+                # delete the file with the addresses to geocode
+                #os.unlink(tmp_file.name)
+                # TODO
+                pass
+        return results
+
+    def _write_csv(self, addresses, max_size=1024 * 1024 * 1):
+        """
+        Write the addresses to a CSV file. Returns file-like objects. 
+        If the batch is too large, it will be split into several files.
+        """
+
+        tmp_file = writer = None
+        
+        for address in addresses:
+            if tmp_file is None:
+                tmp_file = tempfile.NamedTemporaryFile(
+                    #encoding='utf-8',  # what the official doc specifies
+                    encoding='latin-1', # what actually works
+                    delete=False,
+                    prefix="addresses_", suffix=".csv",
+                    mode='w', newline="\n", )
+                # 
+                writer = csv.writer(tmp_file, lineterminator="\n") #quoting=csv.QUOTE_STRINGS
+                writer.writerow(["query"])
+            writer.writerow([address])
+            
+            if tmp_file.tell() >= max_size:
+                tmp_file.flush()
+                tmp_file.close()
+                yield tmp_file
+        
+        tmp_file.flush()
+        tmp_file.close()
+        yield tmp_file
+
+    def _parse_feature_csv(self, row, mapping):
+        #print("in _parse_feature_csv, row:", row)
+        
+        # TODO should we keep all the columns?
+        feature_dict = {key.replace("result_", ""): None if row[index] == "" else row[index]
+                        for key, index in mapping.items()
+                        if (key.startswith("result_") or key in ["latitude", "longitude", "query"])}
+
+        # debug
+        # for key, value in feature_dict.items():
+        #     print("\t", key, ":", value)
+    
+        if feature_dict.get('status') != 'ok':
+            return None
+        del feature_dict['status']
+
+        placename = feature_dict.get('label', None)
+
+        self._check_type(feature_dict.get('type', None))
+
+        #TODO for POI?
+        # type_feature = feature_dict.get('type')
+        # if not type_feature == 'Feature':
+        #     raise GeocoderServiceError(
+        #         "Expected a Feature as a result but received a %s" % type_feature
+        #     )
+        
+        # Parse each resource.
+        latitude = float(feature_dict.get('latitude'))
+        longitude = float(feature_dict.get('longitude'))
+        del feature_dict['latitude']
+        del feature_dict['longitude']
+        
+        return Location(placename, (latitude, longitude), feature_dict)
+
+    def _parse_csv(self, file, exactly_one):
+        print("in _parse_csv, there is a file:", file)
+        try:
+            mapping = None
+            with open(file, 'r') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if mapping is None:
+                        # use the header row to analyze the mapping
+                        mapping = {column: i for i, column in enumerate(row)}
+                        continue
+                    # parse the feature
+                    yield self._parse_feature_csv(row, mapping)
+                    # TODO multiple results?
+        finally:
+            #os.unlink(file)
+            pass
+    
     def reverse(
             self,
             query,

@@ -447,6 +447,25 @@ class Geocoder:
         """
         pass
 
+    def _get_adapter_call(self, is_json, data):
+        if data is not None:
+            return self.adapter.post_csv
+        if self.__rate_limiter is None:
+            # no rate limiter, we can call the geocoder directly
+            return self.adapter.get_json if is_json else self.adapter.get_text
+        else:
+            # we have a rate limiter, we need to wrap the call to the geocoder
+            return self.adapter.get_json if is_json else self.adapter.get_text
+
+    def _search_in_cache(self, url):
+        if self.cache is not None:
+            return self.cache.get(url, None)
+        return None
+
+    def _store_in_cache(self, url, result, expire):
+        if self.cache is not None:
+            self.cache.set(url, result, expire=expire)
+
     def _call_geocoder(
             self,
             url,
@@ -454,7 +473,9 @@ class Geocoder:
             *,
             timeout=DEFAULT_SENTINEL,
             is_json=True,
-            headers=None
+            headers=None,
+            data=None,
+            file=None
     ):
         """
         For a generated query URL, get the results.
@@ -468,23 +489,13 @@ class Geocoder:
                    else self.timeout)
 
         try:
-            result = self.cache.get(url, None) if self.cache is not None else None
+            result = None if data is None else self._search_in_cache(url)
             if result is None:
-                # the result was not cached, we need to call the geocoder
-                if self.__rate_limiter is None:
-                    # no rate limiter, we can call the geocoder directly
-                    if is_json:
-                        result = self.adapter.get_json(
-                            url, timeout=timeout, headers=req_headers)
-                    else:
-                        result = self.adapter.get_text(
-                            url, timeout=timeout, headers=req_headers)
+                adapter_call = self._get_adapter_call(is_json, data)
+                if file is not None:
+                    result = adapter_call(url, timeout=timeout, headers=req_headers, data=data, file=file)
                 else:
-                    # we have a rate limiter, we need to wrap the call to the geocoder
-                    self.__rate_limiter.func = (self.adapter.get_json if is_json
-                                                else self.adapter.get_text)
-                    result = self.__rate_limiter(
-                        url, timeout=timeout, headers=req_headers)
+                    result = adapter_call(url, timeout=timeout, headers=req_headers)
 
             if self.__run_async:
                 async def fut():
@@ -503,8 +514,8 @@ class Geocoder:
 
                 return fut()
             else:
-                if self.cache is not None:
-                    self.cache.set(url, result, expire=self.cache_expire)
+                if data is None:
+                    self._store_in_cache(url, result, expire=self.cache_expire)
                 return callback(result)
         except Exception as error:
             res = self._adapter_error_handler(error)
