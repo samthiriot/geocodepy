@@ -23,7 +23,7 @@ jobs:
 
   check-docs:
     name: RST (README.rst + docs) syntax check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3
@@ -67,10 +67,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix: # *test-matrix  https://github.com/actions/runner/issues/1182
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', 'pypy-3.7']
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy-3.7']
         experimental: [false]
         include:
-          - python-version: '3.13-dev'
+          - python-version: '3.14-dev'
             experimental: true
       max-parallel: 2  # Reduce load on the geocoding services
     steps:
