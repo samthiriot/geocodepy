@@ -1,7 +1,7 @@
 import warnings
 
-from geocodepy.geocoders import Pelias
-from geocodepy.point import Point
+from geopy.geocoders import Pelias
+from geopy.point import Point
 from test.geocoders.util import BaseTestGeocoder, env
 
 
@@ -93,6 +93,5 @@ class TestPelias(BaseTestPelias):
         return Pelias(
             env['PELIAS_DOMAIN'],
             api_key=env['PELIAS_KEY'],
-            cache=False,
             **kwargs,
         )
