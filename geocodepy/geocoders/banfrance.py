@@ -77,7 +77,7 @@ class BANFrance(Geocoder):
             adapter_factory=adapter_factory,
             cache=cache,
             cache_expire=cache_expire,
-            min_delay_seconds=1 / 50
+            min_delay_seconds=1 / 45
         )
         self.domain = domain.strip('/')
 

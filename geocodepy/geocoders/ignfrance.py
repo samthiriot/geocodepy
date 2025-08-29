@@ -113,7 +113,7 @@ class IGNFrance(GeocoderWithCSVBatch):
             adapter_factory=adapter_factory,
             cache=cache,
             cache_expire=cache_expire,
-            min_delay_seconds=1/50  # from the API doc: "50 requêtes par seconde"
+            min_delay_seconds=1/49  # from the API doc: "50 requêtes par seconde"
         )
 
         if api_key or username or password or referer:
@@ -210,7 +210,6 @@ class IGNFrance(GeocoderWithCSVBatch):
                 data={"columns": "query", "indexes": indexes},
                 )
         finally:
-            print("deleting file", tmp_file.name)
             os.unlink(tmp_file.name)
         #   "section": "",
         #   "municipalitycode": "",
@@ -231,7 +230,6 @@ class IGNFrance(GeocoderWithCSVBatch):
     async def _geocode_batch_async(self, tmp_file, indexes="address,poi", timeout=60, callback=None):
         def _callback_delete_file(*args, **kwargs):
             try:
-                print("deleting file", tmp_file.name)
                 os.unlink(tmp_file.name)
             except Exception as e:
                 print("error deleting file", e)
@@ -351,7 +349,6 @@ class IGNFrance(GeocoderWithCSVBatch):
                     yield self._parse_feature_csv(row, mapping)
                     # TODO multiple results?
         finally:
-            print("deleting file", file)
             os.unlink(file)
             
     def reverse(

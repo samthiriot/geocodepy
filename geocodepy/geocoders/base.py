@@ -349,7 +349,7 @@ class Geocoder:
             return False
         return url in self.cache
 
-    def geocode_batch(self, addresses, **kwargs):
+    def geocode_batch(self, addresses, timeout=DEFAULT_SENTINEL, **kwargs):
         """
         Batch geocoding. The default implement just calls sequentially
         the geocoder.geocode method for each address.
@@ -363,7 +363,8 @@ class Geocoder:
         Additional parameters will be bassed to the geocoder.geocode method.
         """
 
-        return [self.geocode(address, **kwargs) for address in addresses]
+        return [self.geocode(address, exactly_one=True, timeout=timeout, **kwargs)
+                for address in addresses]
 
     def __enter__(self):
         """Context manager for synchronous adapters. At exit all
@@ -467,7 +468,7 @@ class Geocoder:
 
     def _store_in_cache(self, url, result, expire):
         if self.cache is not None:
-            print("storing in cache", url, result, expire)
+            print("storing in cache", url)
             self.cache.set(url, result, expire=expire)
 
     def _call_geocoder(
@@ -494,10 +495,8 @@ class Geocoder:
 
         # patch the callback for caching
         def callback_with_cache(result):
-            if self.cache is not None and data is None:
-                print("storing in cache", url, result, self.cache_expire)
+            if data is None:
                 self._store_in_cache(url, result, expire=self.cache_expire)
-            print("callback_with_cache", result)
             try:
                 return callback(result)
             except Exception as e:
@@ -505,15 +504,20 @@ class Geocoder:
                 raise
 
         try:
-            result = None if data is None else self._search_in_cache(url)
-            if result is None:
+            result = None if data is not None else self._search_in_cache(url)
+            
+            if result is not None:
+                # found in cache
+                return callback(result)
+            else:
+                # no cache, we need to call the geocoder
                 adapter_call = self._get_adapter_call(is_json, data)
                 if file is not None:
                     result = adapter_call(url, timeout=timeout, headers=req_headers,
                                           data=data, file=file)
                 else:
                     result = adapter_call(url, timeout=timeout, headers=req_headers)
-
+            
             if self._run_async:
                 async def fut():
                     try:
@@ -592,23 +596,6 @@ class GeocoderWithCSVBatch(Geocoder):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-    def geocode_batch(self, addresses, exactly_one=True, **kwargs):
-        """
-        Batch geocoding. The default implementation just calls sequentially
-        the geocoder.geocode method for each address.
-        Subclasses may override this for more efficient batch geocoding.
-
-        :param addresses: Iterable of address strings to geocode.
-        :param exactly_one: Return one result or a list of results, if available.
-        :param kwargs: Additional keyword arguments passed to geocode.
-        :return: List of geocoding results.
-        """
-        results = []
-        for address in addresses:
-            result = self.geocode(address, exactly_one=exactly_one, **kwargs)
-            results.append(result)
-        return results
 
     def _write_csv(self, addresses, max_size=1024 * 1024 * 1):
         """
