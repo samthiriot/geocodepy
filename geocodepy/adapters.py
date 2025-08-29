@@ -17,6 +17,7 @@ import abc
 import asyncio
 import contextlib
 import email
+from importlib.resources import files
 import io
 import json
 from pathlib import Path
@@ -379,7 +380,6 @@ class URLLibAdapter(BaseSyncAdapter):
                 self._encode_multipart_form_data(buffer, boundary, name, item)
         else:
             crlf = b'\r\n'
-            print("encoding data", name, "=", value)
             buffer.write(b'--' + boundary + crlf)
             buffer.write(('Content-Disposition: form-data; name="{}"\r\n').format(name).encode('utf-8'))
             buffer.write(crlf)
@@ -413,7 +413,6 @@ class URLLibAdapter(BaseSyncAdapter):
             buffer.write(b'--' + boundary + b'--' + crlf)
 
             payload = buffer.getvalue()
-            #print("payload", payload)
             req_headers["Content-Type"] = "multipart/form-data; boundary=" + boundary.decode('utf-8')
             req_headers["Content-Length"] = str(len(payload))
             req = Request(url=url, headers=req_headers,
@@ -669,7 +668,6 @@ class RequestsAdapter(BaseSyncAdapter):
                 )
 
         content_type = resp.headers.get("Content-Type", "").lower()
-        print("received content type:", content_type)
         if content_type == "application/json":
             try:
                 return resp.json()
@@ -818,11 +816,26 @@ class AioHTTPAdapter(BaseAsyncAdapter):
                 url_obj = yarl.URL(url, encoded=True)
                 send_headers = dict(headers) if headers is not None else {}
 
+                # prepare payload
+                # ... open the file
                 file_obj = open(file, "rb")
+                # the data includes the parameters (lists are split) and the file
+                payload_data = aiohttp.FormData()
+                for key, value in data.items():
+                    if isinstance(value, list):
+                        for v in value:
+                            payload_data.add_field(key, v)
+                    else:
+                        payload_data.add_field(key, value)
+                payload_data.add_field('data',
+                                       file_obj,
+                                       filename='togeocode.csv',
+                                       content_type='text/csv; charset=utf-8')
 
+                # send the request
                 async with self.session.post(
                     url_obj,
-                    data=file_obj,
+                    data=payload_data,
                     timeout=timeout,
                     headers=send_headers,
                     proxy=proxy,
@@ -845,9 +858,9 @@ class AioHTTPAdapter(BaseAsyncAdapter):
                         with tempfile.NamedTemporaryFile(delete=False,
                                                          prefix="addresses_geocoded_",
                                                          suffix=".csv",
-                                                         mode='wb') as tmp_file:
-                            for chunk in resp.iter_content(chunk_size=1024 * 1024):
-                                tmp_file.write(chunk)
+                                                         mode='w',
+                                                         encoding='utf-8') as tmp_file:
+                            tmp_file.write(text)
                             tmp_file.close()
                             return tmp_file.name
                     else:

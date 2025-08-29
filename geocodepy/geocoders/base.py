@@ -9,6 +9,7 @@ import threading
 from geocodepy import compat
 from geocodepy.adapters import (
     AdapterHTTPError,
+    AioHTTPAdapter,
     BaseAsyncAdapter,
     BaseSyncAdapter,
     RequestsAdapter,
@@ -276,9 +277,9 @@ class Geocoder:
             ssl_context=self.ssl_context,
         )
         if isinstance(self.adapter, BaseSyncAdapter):
-            self.__run_async = False
+            self._run_async = False
         elif isinstance(self.adapter, BaseAsyncAdapter):
-            self.__run_async = True
+            self._run_async = True
         else:
             raise ConfigurationError(
                 "Adapter %r must extend either BaseSyncAdapter or BaseAsyncAdapter"
@@ -286,7 +287,7 @@ class Geocoder:
             )
 
         if min_delay_seconds is not None:
-            if self.__run_async:
+            if self._run_async:
                 self.__rate_limiter = AsyncRateLimiter(
                     None,
                     min_delay_seconds=min_delay_seconds,
@@ -371,7 +372,7 @@ class Geocoder:
         In synchronous mode context manager usage is not required,
         and connections will be automatically closed by garbage collection.
         """
-        if self.__run_async:
+        if self._run_async:
             raise TypeError("`async with` must be used with async adapters")
         res = self.adapter.__enter__()
         assert res is self.adapter, "adapter's __enter__ must return `self`"
@@ -388,7 +389,7 @@ class Geocoder:
         however, it is strongly advised to avoid warnings about
         resources leaks.
         """
-        if not self.__run_async:
+        if not self._run_async:
             raise TypeError("`async with` cannot be used with sync adapters")
         res = await self.adapter.__aenter__()
         assert res is self.adapter, "adapter's __enter__ must return `self`"
@@ -466,6 +467,7 @@ class Geocoder:
 
     def _store_in_cache(self, url, result, expire):
         if self.cache is not None:
+            print("storing in cache", url, result, expire)
             self.cache.set(url, result, expire=expire)
 
     def _call_geocoder(
@@ -490,6 +492,18 @@ class Geocoder:
         timeout = (timeout if timeout is not DEFAULT_SENTINEL
                    else self.timeout)
 
+        # patch the callback for caching
+        def callback_with_cache(result):
+            if self.cache is not None and data is None:
+                print("storing in cache", url, result, self.cache_expire)
+                self._store_in_cache(url, result, expire=self.cache_expire)
+            print("callback_with_cache", result)
+            try:
+                return callback(result)
+            except Exception as e:
+                print("error in callback_with_cache", e)
+                raise
+
         try:
             result = None if data is None else self._search_in_cache(url)
             if result is None:
@@ -500,14 +514,12 @@ class Geocoder:
                 else:
                     result = adapter_call(url, timeout=timeout, headers=req_headers)
 
-            if self.__run_async:
+            if self._run_async:
                 async def fut():
                     try:
-                        res = callback(await result)
+                        res = callback_with_cache(await result)
                         if inspect.isawaitable(res):
                             res = await res
-                        if self.cache is not None:
-                            self.cache.set(url, result, expire=self.cache_expire)
                         return res
                     except Exception as error:
                         res = self._adapter_error_handler(error)
@@ -517,9 +529,7 @@ class Geocoder:
 
                 return fut()
             else:
-                if data is None:
-                    self._store_in_cache(url, result, expire=self.cache_expire)
-                return callback(result)
+                return callback_with_cache(result)
         except Exception as error:
             res = self._adapter_error_handler(error)
             if res is NONE_RESULT:
@@ -622,11 +632,9 @@ class GeocoderWithCSVBatch(Geocoder):
             writer.writerow([address])
             
             if tmp_file.tell() >= max_size:
-                #tmp_file.flush()
                 tmp_file.close()
                 yield tmp_file
                 tmp_file = None
-        #tmp_file.flush()
         tmp_file.close()
         yield tmp_file
 

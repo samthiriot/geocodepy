@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import os
 import tempfile
@@ -112,7 +113,7 @@ class IGNFrance(GeocoderWithCSVBatch):
             adapter_factory=adapter_factory,
             cache=cache,
             cache_expire=cache_expire,
-            min_delay_seconds=1 / 50
+            min_delay_seconds=1/50  # from the API doc: "50 requêtes par seconde"
         )
 
         if api_key or username or password or referer:
@@ -199,8 +200,54 @@ class IGNFrance(GeocoderWithCSVBatch):
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
 
+    def _geocode_batch_sync(self, tmp_file, indexes="address,poi", timeout=60, callback=None):
+        try:
+            return self._call_geocoder(
+                self.geocode_batch_api,
+                callback,
+                timeout=timeout,
+                file=tmp_file.name,
+                data={"columns": "query", "indexes": indexes},
+                )
+        finally:
+            print("deleting file", tmp_file.name)
+            os.unlink(tmp_file.name)
+        #   "section": "",
+        #   "municipalitycode": "",
+        #   "number": "",
+        #   "lon": "",
+        #   "postcode": "",
+        #   "oldmunicipalitycode": "",
+        #   "citycode": "",
+        #   "type": "",
+        #   "result_columns": "",
+        #   "districtcode": "",
+        #   "category": "",
+        #   "departmentcode": "",
+        #   "sheet": "",
+        #   "lat": "",
+        #   "result_columns": "",
+
+    async def _geocode_batch_async(self, tmp_file, indexes="address,poi", timeout=60, callback=None):
+        def _callback_delete_file(*args, **kwargs):
+            try:
+                print("deleting file", tmp_file.name)
+                os.unlink(tmp_file.name)
+            except Exception as e:
+                print("error deleting file", e)
+                raise e
+            return callback(*args, **kwargs)
+
+        return await self._call_geocoder(
+            self.geocode_batch_api,
+            callback,
+            timeout=timeout,
+            file=tmp_file.name,
+            data={"columns": "query", "indexes": indexes},
+            )
+    
     @override
-    def geocode_batch(self, addresses, indexes="address,poi"):
+    def geocode_batch(self, addresses, indexes="address,poi", timeout=60):
         """
         IGN offers a native batch geocoding service. The list of addresses is written in a
         temporary file and sent to the geocoding service.
@@ -208,43 +255,42 @@ class IGNFrance(GeocoderWithCSVBatch):
         #return super().geocode_batch(addresses, exactly_one=exactly_one, **kwargs)
         # TODO how to skip the results in cache?
         callback = partial(self._parse_csv)
-        results = []
         indexes = self._parse_index(indexes)
-        print("indexes", indexes)
-        for tmp_file in self._write_csv(addresses, max_size=1024*1024*1): # accept 1Mb, the official limit is 50Mb
+        files = self._write_csv(addresses, max_size=1024*1024*1)  # accept 1Mb, the official limit is 50Mb
+        try:
+            if self._run_async:
+                async def fut():
+                    sem = asyncio.Semaphore(5)
+                    
+                    async def one(tmp_file):
+                        async with sem:
+                            return await self._geocode_batch_async(tmp_file, indexes, timeout, callback)
+                    
+                    grouped = await asyncio.gather(*(one(f) for f in files),
+                                                   return_exceptions=True)
 
-            try:
-                print("written file", tmp_file.name)
-                res = self._call_geocoder(self.geocode_batch_api,
-                                          callback,
-                                          timeout=1024*1024*10,
-                                          file=tmp_file.name,
-                                          data={
-                                              "columns": "query",
-                                              "indexes": indexes,
-                                                #   "section": "",
-                                                #   "municipalitycode": "",
-                                                #   "number": "",
-                                                #   "lon": "",
-                                                #   "postcode": "",
-                                                #   "oldmunicipalitycode": "",
-                                                #   "citycode": "",
-                                                #   "type": "",
-                                                #   "result_columns": "",
-                                                #   "districtcode": "",
-                                                #   "category": "",
-                                                #   "departmentcode": "",
-                                                #   "sheet": "",
-                                                #   "lat": "",
-                                                #   "result_columns": "",
-                                          },
-                                          )
-                results.extend(res)
-            finally:
-                # delete the file with the addresses to geocode
-                os.unlink(tmp_file.name)
-                
-        return results
+                    results = []
+                    for g in grouped:
+                        if isinstance(g, Exception):
+                            # à toi de voir: log, accumuler, ou re-raise
+                            raise g
+                        results.extend(g)
+                    return results
+
+                    # TODO delete files
+
+                return fut()
+            else:
+                # call sequentially the geocoding of every single file
+                results = []
+                for tmp_file in files:
+                    results.extend(self._geocode_batch_sync(tmp_file, indexes, timeout, callback))
+                return results
+        finally:
+            pass
+            # for tmp_file in files:
+            #     print("deleting file", tmp_file.name)
+            #     os.unlink(tmp_file.name)
 
     def _parse_feature_csv(self, row, mapping):
         # print("in _parse_feature_csv, row:", row)
@@ -292,7 +338,6 @@ class IGNFrance(GeocoderWithCSVBatch):
         return Location(placename, (latitude, longitude), feature_dict)
 
     def _parse_csv(self, file):
-        print("in _parse_csv, there is a file:", file)
         try:
             mapping = None
             with open(file, 'r') as f:
@@ -306,6 +351,7 @@ class IGNFrance(GeocoderWithCSVBatch):
                     yield self._parse_feature_csv(row, mapping)
                     # TODO multiple results?
         finally:
+            print("deleting file", file)
             os.unlink(file)
             
     def reverse(
