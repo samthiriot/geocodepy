@@ -1,7 +1,9 @@
 import asyncio
+import csv
 import functools
 import inspect
 import logging
+import tempfile
 import threading
 
 from geocodepy import compat
@@ -49,7 +51,7 @@ _DEFAULT_USER_AGENT = "geopy/%s" % __version__
 
 _DEFAULT_ADAPTER_CLASS = next(
     adapter_cls
-    for adapter_cls in (RequestsAdapter, URLLibAdapter,)
+    for adapter_cls in (RequestsAdapter, URLLibAdapter, )
     if adapter_cls.is_available
 )
 
@@ -493,7 +495,8 @@ class Geocoder:
             if result is None:
                 adapter_call = self._get_adapter_call(is_json, data)
                 if file is not None:
-                    result = adapter_call(url, timeout=timeout, headers=req_headers, data=data, file=file)
+                    result = adapter_call(url, timeout=timeout, headers=req_headers,
+                                          data=data, file=file)
                 else:
                     result = adapter_call(url, timeout=timeout, headers=req_headers)
 
@@ -571,6 +574,61 @@ class Geocoder:
 
     # def reverse(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
     #     raise NotImplementedError()
+
+
+class GeocoderWithCSVBatch(Geocoder):
+    """
+    Geocoder subclass that provides CSV batch geocoding support.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def geocode_batch(self, addresses, exactly_one=True, **kwargs):
+        """
+        Batch geocoding. The default implementation just calls sequentially
+        the geocoder.geocode method for each address.
+        Subclasses may override this for more efficient batch geocoding.
+
+        :param addresses: Iterable of address strings to geocode.
+        :param exactly_one: Return one result or a list of results, if available.
+        :param kwargs: Additional keyword arguments passed to geocode.
+        :return: List of geocoding results.
+        """
+        results = []
+        for address in addresses:
+            result = self.geocode(address, exactly_one=exactly_one, **kwargs)
+            results.append(result)
+        return results
+
+    def _write_csv(self, addresses, max_size=1024 * 1024 * 1):
+        """
+        Write the addresses to a CSV file. Returns file-like objects. 
+        If the batch is too large, it will be split into several files.
+        """
+
+        tmp_file = writer = None
+        
+        for address in addresses:
+            if tmp_file is None:
+                tmp_file = tempfile.NamedTemporaryFile(
+                    #encoding='utf-8',  # what the official doc specifies
+                    encoding='latin-1', # what actually works
+                    delete=False,
+                    prefix="addresses_", suffix=".csv",
+                    mode='w', newline="\n", )
+                # 
+                writer = csv.writer(tmp_file, lineterminator="\n") #quoting=csv.QUOTE_STRINGS
+                writer.writerow(["query"])
+            writer.writerow([address])
+            
+            if tmp_file.tell() >= max_size:
+                #tmp_file.flush()
+                tmp_file.close()
+                yield tmp_file
+                tmp_file = None
+        #tmp_file.flush()
+        tmp_file.close()
+        yield tmp_file
 
 
 def _format_coordinate(coordinate):

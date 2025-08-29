@@ -4,13 +4,15 @@ from geocodepy.geocoders.nominatim import Nominatim
 
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 requests_log = logging.getLogger("requests.packages.urllib3")
 requests_log.setLevel(logging.DEBUG)
 requests_log.propagate = True
 
-HTTPConnection.debuglevel = 1
+from http.client import HTTPConnection
+
+HTTPConnection.debuglevel = 21
 
 geocoder = IGNFrance(cache=False)
 
@@ -30,14 +32,18 @@ def gen_many_addresses(max):
 
 
 # geocode an address
-results = geocoder.geocode_batch(addresses_france)
-for result in results:
-    print(repr(result))
+results = geocoder.geocode_batch(addresses_france, indexes="address")
+for i, result in enumerate(results):
+    print("\n", i, repr(result))
     if result is not None:
         print("\t", result.raw)
-    #print("[%s %s]\t %s" % (result., result.longitude, result.address))
+#     #print("[%s %s]\t %s" % (result., result.longitude, result.address))
 
-
+# càmparaison: 
+# sans batch: (throtteling) 1.6min ; 4.43m!!!
+#
+# avec batch: 13s
+#
 quit()
 
 results = geocoder.geocode_batch(gen_many_addresses(10000))

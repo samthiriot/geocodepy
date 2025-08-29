@@ -213,7 +213,7 @@ class TestIGNFrance(BaseTestGeocoder):
                 "address": "Palais de l'Élysée 75008 Paris"},
         }
         results = await self.geocode_batch_run(
-            {"addresses": test_data.keys(), "exactly_one": True},
+            {"addresses": test_data.keys()},
             test_data.values())
 
         assert len(results) == len(test_data)
@@ -239,7 +239,7 @@ class TestIGNFrance(BaseTestGeocoder):
                 "address": "Palais de l'Élysée 75008 Paris"},
         }
         results = await self.geocode_batch_run(
-            {"addresses": test_data.keys(), "indexes": "address,poi", "exactly_one": True},
+            {"addresses": test_data.keys(), "indexes": "address,poi"},
             test_data.values())
 
         assert len(results) == len(test_data)
@@ -266,7 +266,7 @@ class TestIGNFrance(BaseTestGeocoder):
         }
 
         results = await self.geocode_batch_run(
-            {"addresses": test_data.keys(), "indexes": "address", "exactly_one": True},
+            {"addresses": test_data.keys(), "indexes": "address"},
             test_data.values())
 
         assert len(results) == len(test_data)
@@ -277,7 +277,8 @@ class TestIGNFrance(BaseTestGeocoder):
             "13 Rue de la Paix, 75002 Paris, France": {
                 "latitude": 48.867365,
                 "longitude": 2.349098,
-                "address": "Direction Régionale des Finances Publiques -Paris Île-de-France 75002 Paris"},
+                "address": "Direction Régionale des Finances Publiques -Paris "
+                           "Île-de-France 75002 Paris"},
             "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER": {
                 "latitude": 47.293048,
                 "longitude": 1.717472,
@@ -293,7 +294,7 @@ class TestIGNFrance(BaseTestGeocoder):
         }
 
         results = await self.geocode_batch_run(
-            {"addresses": test_data.keys(), "indexes": "poi", "exactly_one": True},
+            {"addresses": test_data.keys(), "indexes": "poi"},
             test_data.values())
 
         assert len(results) == len(test_data)
@@ -303,7 +304,8 @@ class TestIGNFrance(BaseTestGeocoder):
             "13 Rue de la Paix, 75002 Paris, France": {
                 "latitude": 48.867365,
                 "longitude": 2.349098,
-                "address": "Direction Régionale des Finances Publiques -Paris Île-de-France 75002 Paris"},
+                "address": "Direction Régionale des Finances Publiques -Paris "
+                           "Île-de-France 75002 Paris"},
             "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER": {
                 "latitude": 47.293048,
                 "longitude": 1.717472,
@@ -319,15 +321,14 @@ class TestIGNFrance(BaseTestGeocoder):
         }
 
         try:
-            results = await self.geocode_batch_run(
-                {"addresses": test_data.keys(), "indexes": "address,wrong", "exactly_one": True},
+            await self.geocode_batch_run(
+                {"addresses": test_data.keys(), "indexes": "address,wrong"},
                 test_data.values(),
                 expect_failure=True,
                 )
             assert False
         except GeocoderQueryError:
             pass
-        
 
 
 class TestIGNFranceUsernameAuthProxy(BaseTestGeocoder):

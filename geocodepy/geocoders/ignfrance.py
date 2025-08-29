@@ -7,14 +7,14 @@ from functools import partial
 from urllib.parse import urlencode
 
 from geocodepy.exc import GeocoderQueryError, GeocoderServiceError
-from geocodepy.geocoders.base import DEFAULT_SENTINEL, Geocoder
+from geocodepy.geocoders.base import DEFAULT_SENTINEL, Geocoder, GeocoderWithCSVBatch
 from geocodepy.location import Location
 from geocodepy.util import logger
 
 __all__ = ("IGNFrance", )
 
 
-class IGNFrance(Geocoder):
+class IGNFrance(GeocoderWithCSVBatch):
     """Geocoder using the IGN France GeoCoder OpenLS API.
 
     Documentation at:
@@ -200,22 +200,17 @@ class IGNFrance(Geocoder):
         return self._call_geocoder(url, callback, timeout=timeout)
 
     @override
-    def geocode_batch(self, addresses, exactly_one=True, **kwargs):
+    def geocode_batch(self, addresses, indexes="address,poi"):
         """
-        Batch geocoding. The default implement just calls sequentially
-        the geocoder.geocode method for each address.
-        Some geocoders may implement a more efficient batch geocoding method
-        if they support a native batch geocoding method.
-
-        :param float min_delay_seconds:
-            The minimum delay between each geocoding request.
-            If not provided, the geocoder will not wait between requests.
-
-        Additional parameters will be bassed to the geocoder.geocode method.
+        IGN offers a native batch geocoding service. The list of addresses is written in a
+        temporary file and sent to the geocoding service.
         """
+        #return super().geocode_batch(addresses, exactly_one=exactly_one, **kwargs)
         # TODO how to skip the results in cache?
-        callback = partial(self._parse_csv, exactly_one=exactly_one)
+        callback = partial(self._parse_csv)
         results = []
+        indexes = self._parse_index(indexes)
+        print("indexes", indexes)
         for tmp_file in self._write_csv(addresses, max_size=1024*1024*1): # accept 1Mb, the official limit is 50Mb
 
             try:
@@ -226,70 +221,39 @@ class IGNFrance(Geocoder):
                                           file=tmp_file.name,
                                           data={
                                               "columns": "query",
-                                            #   "section": "",
-                                            #   "municipalitycode": "",
-                                            #   "number": "",
-                                            #   "lon": "",
-                                            #   "postcode": "",
-                                            #   "oldmunicipalitycode": "",
-                                            #   "citycode": "",
-                                            #   "type": "",
-                                            #   "result_columns": "",
-                                            #   "districtcode": "",
-                                            #   "category": "",
-                                            #   "departmentcode": "",
-                                            #   "sheet": "",
-                                            #   "lat": "",
-                                            #   "result_columns": "",
-                                            #   "indexes": "",
-
+                                              "indexes": indexes,
+                                                #   "section": "",
+                                                #   "municipalitycode": "",
+                                                #   "number": "",
+                                                #   "lon": "",
+                                                #   "postcode": "",
+                                                #   "oldmunicipalitycode": "",
+                                                #   "citycode": "",
+                                                #   "type": "",
+                                                #   "result_columns": "",
+                                                #   "districtcode": "",
+                                                #   "category": "",
+                                                #   "departmentcode": "",
+                                                #   "sheet": "",
+                                                #   "lat": "",
+                                                #   "result_columns": "",
                                           },
-                                          **kwargs)
+                                          )
                 results.extend(res)
             finally:
                 # delete the file with the addresses to geocode
-                #os.unlink(tmp_file.name)
-                # TODO
-                pass
+                os.unlink(tmp_file.name)
+                
         return results
 
-    def _write_csv(self, addresses, max_size=1024 * 1024 * 1):
-        """
-        Write the addresses to a CSV file. Returns file-like objects. 
-        If the batch is too large, it will be split into several files.
-        """
-
-        tmp_file = writer = None
-        
-        for address in addresses:
-            if tmp_file is None:
-                tmp_file = tempfile.NamedTemporaryFile(
-                    #encoding='utf-8',  # what the official doc specifies
-                    encoding='latin-1', # what actually works
-                    delete=False,
-                    prefix="addresses_", suffix=".csv",
-                    mode='w', newline="\n", )
-                # 
-                writer = csv.writer(tmp_file, lineterminator="\n") #quoting=csv.QUOTE_STRINGS
-                writer.writerow(["query"])
-            writer.writerow([address])
-            
-            if tmp_file.tell() >= max_size:
-                tmp_file.flush()
-                tmp_file.close()
-                yield tmp_file
-        
-        tmp_file.flush()
-        tmp_file.close()
-        yield tmp_file
-
     def _parse_feature_csv(self, row, mapping):
-        #print("in _parse_feature_csv, row:", row)
+        # print("in _parse_feature_csv, row:", row)
         
         # TODO should we keep all the columns?
-        feature_dict = {key.replace("result_", ""): None if row[index] == "" else row[index]
-                        for key, index in mapping.items()
-                        if (key.startswith("result_") or key in ["latitude", "longitude", "query"])}
+        feature_dict = {
+            key.replace("result_", ""): None if row[index] == "" else row[index]
+            for key, index in mapping.items()
+            if (key.startswith("result_") or key in ["latitude", "longitude", "query"])}
 
         # debug
         # for key, value in feature_dict.items():
@@ -300,6 +264,15 @@ class IGNFrance(Geocoder):
         del feature_dict['status']
 
         placename = feature_dict.get('label', None)
+        # in case of POI, the service does not always return a label
+        if placename is None:
+            # in this case we do our best to generate something looking like an
+            # address, in the form <toponym> <postcode> <city>
+            placename = " ".join(e for e in [
+                feature_dict.get('toponym'),
+                feature_dict.get('postcode', None),
+                feature_dict.get('city', None)
+            ] if e is not None)
 
         self._check_type(feature_dict.get('type', None))
 
@@ -318,7 +291,7 @@ class IGNFrance(Geocoder):
         
         return Location(placename, (latitude, longitude), feature_dict)
 
-    def _parse_csv(self, file, exactly_one):
+    def _parse_csv(self, file):
         print("in _parse_csv, there is a file:", file)
         try:
             mapping = None
@@ -333,9 +306,8 @@ class IGNFrance(Geocoder):
                     yield self._parse_feature_csv(row, mapping)
                     # TODO multiple results?
         finally:
-            #os.unlink(file)
-            pass
-    
+            os.unlink(file)
+            
     def reverse(
             self,
             query,
@@ -416,9 +388,9 @@ class IGNFrance(Geocoder):
             )
         return indexes
 
-    def _check_type(self, type):
-        if type not in {'housenumber', 'street', 'locality', 'municipality'}:
-            raise GeocoderQueryError("invalid type %s")
+    def _check_type(self, _type):
+        if _type not in {'housenumber', 'street', 'locality', 'municipality', None}:
+            raise GeocoderQueryError("invalid type %s" % _type)
 
     def _request_raw_content(self, url, callback, *, timeout):
         """
