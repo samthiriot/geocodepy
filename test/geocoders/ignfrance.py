@@ -192,6 +192,58 @@ class TestIGNFrance(BaseTestGeocoder):
                 index='a'  # invalid
             )
 
+    async def test_geocode_batch_default(self):
+
+        test_data = {
+            "13 Rue de la Paix, 75002 Paris, France": {
+                "latitude": 48.86931,
+                "longitude": 2.316138,
+                "address": "13 Rue de la Paix 75002 Paris"},
+            "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER": {
+                "latitude": 47.293048,
+                "longitude": 1.717472,
+                "address": "IGN Sologne-le Camp des Landes 41200 Villefranche-sur-Cher"},
+            "1 Pl. de la Comédie, 69001 Lyon, France": {
+                "latitude": 45.767808,
+                "longitude": 4.835757,
+                "address": "1 Place de la Comédie 69001 Lyon"},
+            "Palais de l'élysée, Paris": {
+                "latitude": 48.86931,
+                "longitude": 2.316138,
+                "address": "Palais de l'Élysée 75008 Paris"},
+        }
+        results = await self.geocode_batch_run(
+            {"addresses": test_data.keys(), "exactly_one": True},
+            test_data.values())
+
+        assert len(results) == len(test_data)
+
+    async def test_geocode_batch_addresses_poi(self):
+
+        test_data = {
+            "13 Rue de la Paix, 75002 Paris, France": {
+                "latitude": 48.86931,
+                "longitude": 2.316138,
+                "address": "13 Rue de la Paix 75002 Paris"},
+            "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER": {
+                "latitude": 47.293048,
+                "longitude": 1.717472,
+                "address": "IGN Sologne-le Camp des Landes 41200 Villefranche-sur-Cher"},
+            "1 Pl. de la Comédie, 69001 Lyon, France": {
+                "latitude": 45.767808,
+                "longitude": 4.835757,
+                "address": "1 Place de la Comédie 69001 Lyon"},
+            "Palais de l'élysée, Paris": {
+                "latitude": 48.86931,
+                "longitude": 2.316138,
+                "address": "Palais de l'Élysée 75008 Paris"},
+        }
+        results = await self.geocode_batch_run(
+            {"addresses": test_data.keys(), "indexes": "address,poi", "exactly_one": True},
+            test_data.values())
+
+        assert len(results) == len(test_data)
+
     async def test_geocode_batch_addresses(self):
 
         test_data = {
@@ -214,10 +266,68 @@ class TestIGNFrance(BaseTestGeocoder):
         }
 
         results = await self.geocode_batch_run(
-            {"addresses": test_data.keys(), "index": "address", "exactly_one": True},
+            {"addresses": test_data.keys(), "indexes": "address", "exactly_one": True},
             test_data.values())
 
         assert len(results) == len(test_data)
+
+    async def test_geocode_batch_poi(self):
+
+        test_data = {
+            "13 Rue de la Paix, 75002 Paris, France": {
+                "latitude": 48.867365,
+                "longitude": 2.349098,
+                "address": "Direction Régionale des Finances Publiques -Paris Île-de-France 75002 Paris"},
+            "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER": {
+                "latitude": 47.293048,
+                "longitude": 1.717472,
+                "address": "IGN Sologne-le Camp des Landes 41200 Villefranche-sur-Cher"},
+            "1 Pl. de la Comédie, 69001 Lyon, France": {
+                "latitude": 45.77355,
+                "longitude": 4.838153,
+                "address": "Place Louis Chazette 69001 Lyon 1er Arrondissement"},
+            "Palais de l'élysée, Paris": {
+                "latitude": 48.86931,
+                "longitude": 2.316138,
+                "address": "Palais de l'Élysée 75008 Paris"},
+        }
+
+        results = await self.geocode_batch_run(
+            {"addresses": test_data.keys(), "indexes": "poi", "exactly_one": True},
+            test_data.values())
+
+        assert len(results) == len(test_data)
+
+    async def test_geocode_batch_index_wrong(self):
+        test_data = {
+            "13 Rue de la Paix, 75002 Paris, France": {
+                "latitude": 48.867365,
+                "longitude": 2.349098,
+                "address": "Direction Régionale des Finances Publiques -Paris Île-de-France 75002 Paris"},
+            "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER": {
+                "latitude": 47.293048,
+                "longitude": 1.717472,
+                "address": "IGN Sologne-le Camp des Landes 41200 Villefranche-sur-Cher"},
+            "1 Pl. de la Comédie, 69001 Lyon, France": {
+                "latitude": 45.77355,
+                "longitude": 4.838153,
+                "address": "Place Louis Chazette 69001 Lyon 1er Arrondissement"},
+            "Palais de l'élysée, Paris": {
+                "latitude": 48.86931,
+                "longitude": 2.316138,
+                "address": "Palais de l'Élysée 75008 Paris"},
+        }
+
+        try:
+            results = await self.geocode_batch_run(
+                {"addresses": test_data.keys(), "indexes": "address,wrong", "exactly_one": True},
+                test_data.values(),
+                expect_failure=True,
+                )
+            assert False
+        except GeocoderQueryError:
+            pass
+        
 
 
 class TestIGNFranceUsernameAuthProxy(BaseTestGeocoder):
