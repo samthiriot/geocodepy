@@ -108,7 +108,9 @@ class Location:
         return self._tuple[index]
 
     def __str__(self):
-        return self._address
+        return "(%s, %s) %s" % (
+            self.latitude, self.longitude, self._address
+        )
 
     def __repr__(self):
         return "Location(%s, (%s, %s, %s))" % (
