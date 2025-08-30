@@ -341,7 +341,9 @@ class BaseAdapterProxy:
     def post_csv(self, url, *, data, file, timeout, headers):
         return self._wrapped_post_csv(
             url,
-            partial(self.adapter.post_csv, url, data=data, file=file, timeout=timeout, headers=headers),
+            partial(self.adapter.post_csv, url,
+                    data=data, file=file,
+                    timeout=timeout, headers=headers),
         )
 
     def _retries(self, url):

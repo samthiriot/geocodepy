@@ -9,7 +9,6 @@ import threading
 from geocodepy import compat
 from geocodepy.adapters import (
     AdapterHTTPError,
-    AioHTTPAdapter,
     BaseAsyncAdapter,
     BaseSyncAdapter,
     RequestsAdapter,
@@ -366,7 +365,8 @@ class Geocoder:
         for address in addresses:
             result = None
             try:
-                result = self.geocode(address, exactly_one=True, timeout=timeout, **kwargs)
+                result = self.geocode(
+                    address, exactly_one=True, timeout=timeout, **kwargs)
             except Exception as e:
                 print("error geocoding", address, e)
             results.append(result)
@@ -510,7 +510,7 @@ class Geocoder:
 
         try:
             result = None if data is not None else self._search_in_cache(url)
-            
+
             if result is not None:
                 # found in cache
                 return callback(result)
@@ -522,7 +522,7 @@ class Geocoder:
                                           data=data, file=file)
                 else:
                     result = adapter_call(url, timeout=timeout, headers=req_headers)
-            
+
             if self._run_async:
                 async def fut():
                     try:
@@ -599,30 +599,32 @@ class GeocoderWithCSVBatch(Geocoder):
     """
     Geocoder subclass that provides CSV batch geocoding support.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def _write_csv(self, addresses, max_size=1024 * 1024 * 1):
         """
-        Write the addresses to a CSV file. Returns file-like objects. 
+        Write the addresses to a CSV file. Returns file-like objects.
         If the batch is too large, it will be split into several files.
         """
 
         tmp_file = writer = None
-        
+
         for address in addresses:
             if tmp_file is None:
                 tmp_file = tempfile.NamedTemporaryFile(
-                    #encoding='utf-8',  # what the official doc specifies
-                    encoding='latin-1', # what actually works
+                    # encoding='utf-8',  # what the official doc specifies
+                    encoding='latin-1',  # what actually works
                     delete=False,
                     prefix="addresses_", suffix=".csv",
                     mode='w', newline="\n", )
-                # 
-                writer = csv.writer(tmp_file, lineterminator="\n") #quoting=csv.QUOTE_STRINGS
+                #
+                # quoting=csv.QUOTE_STRINGS
+                writer = csv.writer(tmp_file, lineterminator="\n")
                 writer.writerow(["query"])
             writer.writerow([address])
-            
+
             if tmp_file.tell() >= max_size:
                 tmp_file.close()
                 yield tmp_file
@@ -634,7 +636,7 @@ class GeocoderWithCSVBatch(Geocoder):
 def _format_coordinate(coordinate):
     if abs(coordinate) >= 1:
         return coordinate  # use the default arbitrary precision scientific notation
-    return f"{coordinate:.7f}"  # noqa
+    return f"{coordinate: .7f}"  # noqa
 
 
 def _synchronized(func):

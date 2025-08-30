@@ -121,7 +121,7 @@ class Geoapify(Geocoder):
             exception. Set this only if you wish to override, on this call
             only, the value set during the geocoder's initialization.
 
-        :param str language: Result language. 2-character ISO 639-1 language codes 
+        :param str language: Result language. 2-character ISO 639-1 language codes
             are supported (for instance: 'fr').
 
         :rtype: ``None``, :class:`geocodepy.location.Location` or a list of them, if
@@ -177,7 +177,7 @@ class Geoapify(Geocoder):
             exception. Set this only if you wish to override, on this call
             only, the value set during the geocoder's initialization.
 
-        :param str language: Result language. 2-character ISO 639-1 language codes 
+        :param str language: Result language. 2-character ISO 639-1 language codes
             are supported (for instance: 'fr').
 
         :rtype: ``None``, :class:`geocodepy.location.Location` or a list of them, if
@@ -199,7 +199,7 @@ class Geoapify(Geocoder):
 
         if limit is not None:
             params['limit'] = limit
-        
+
         if language is not None:
             params['lang'] = language
 
@@ -210,7 +210,7 @@ class Geoapify(Geocoder):
 
     def _parse_feature(self, feature):
         latitude = feature.get('lat', None)
-        longitude = feature.get('lon', None)        
+        longitude = feature.get('lon', None)
         placename = feature.get('formatted', None)
         return Location(placename, (latitude, longitude), feature)
 
@@ -224,4 +224,3 @@ class Geoapify(Geocoder):
             return self._parse_feature(features[0])
         else:
             return [self._parse_feature(feature) for feature in features]
-

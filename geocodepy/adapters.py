@@ -17,10 +17,8 @@ import abc
 import asyncio
 import contextlib
 import email
-from importlib.resources import files
 import io
 import json
-from pathlib import Path
 import ssl
 import tempfile
 import time
@@ -41,7 +39,6 @@ from urllib.request import (
 
 from geocodepy.exc import (
     GeocoderParseError,
-    GeocoderQueryError,
     GeocoderServiceError,
     GeocoderTimedOut,
     GeocoderUnavailable,
@@ -232,7 +229,8 @@ class BaseAdapter(abc.ABC):
             or as a dict/list (for JSON), depending on the response content type.
 
         :raises geocodepy.exc.GeocoderParseError: If the response cannot be parsed.
-        :raises geocodepy.adapters.AdapterHTTPError: If the response status is not successful.
+        :raises geocodepy.adapters.AdapterHTTPError: If the response status
+            is not successful.
         :raises geocodepy.exc.GeocoderTimedOut: If the request times out.
         :raises geocodepy.exc.GeocoderUnavailable: If the target host is unreachable.
         :raises geocodepy.exc.GeocoderServiceError: For any other error.
@@ -381,7 +379,9 @@ class URLLibAdapter(BaseSyncAdapter):
         else:
             crlf = b'\r\n'
             buffer.write(b'--' + boundary + crlf)
-            buffer.write(('Content-Disposition: form-data; name="{}"\r\n').format(name).encode('utf-8'))
+            buffer.write(
+                ('Content-Disposition: form-data; name="{}"\r\n'
+                 ).format(name).encode('utf-8'))
             buffer.write(crlf)
             buffer.write(value.encode('utf-8'))
             buffer.write(crlf)
@@ -404,7 +404,10 @@ class URLLibAdapter(BaseSyncAdapter):
                 self._encode_multipart_form_data(buffer, boundary, name, value)
             # encode the file as multipart/form-data
             buffer.write(b'--' + boundary + crlf)
-            buffer.write(('Content-Disposition: form-data; name="data"; filename="togeocode.csv"\r\n').encode('utf-8'))
+            buffer.write(
+                ('Content-Disposition: form-data; name="data"; '
+                 'filename="togeocode.csv"\r\n'
+                 ).encode('utf-8'))
             buffer.write('Content-Type: text/csv; charset=utf-8\r\n'.encode('utf-8'))
             buffer.write(crlf)
             buffer.write(f.read())
@@ -413,13 +416,13 @@ class URLLibAdapter(BaseSyncAdapter):
             buffer.write(b'--' + boundary + b'--' + crlf)
 
             payload = buffer.getvalue()
-            req_headers["Content-Type"] = "multipart/form-data; boundary=" + boundary.decode('utf-8')
+            req_headers["Content-Type"] = "multipart/form-data; boundary=" + \
+                boundary.decode('utf-8')
             req_headers["Content-Length"] = str(len(payload))
             req = Request(url=url, headers=req_headers,
                           data=payload,
                           method="POST"
                           )
-            
             try:
                 page = self.urlopen(req, timeout=timeout)
             except Exception as error:
@@ -470,7 +473,8 @@ class URLLibAdapter(BaseSyncAdapter):
                     return json.loads(text)
                 except Exception:
                     raise GeocoderParseError("Could not parse JSON response:\n%s" % text)
-            elif "text/csv" in content_type or "application/csv" in content_type or "csv" in content_type:
+            elif "text/csv" in content_type or "application/csv" in content_type \
+                 or "csv" in content_type:
                 # let's write the csv received to a temporary file
                 with tempfile.NamedTemporaryFile(delete=False,
                                                  prefix="addresses_geocoded_",
@@ -480,8 +484,10 @@ class URLLibAdapter(BaseSyncAdapter):
                     tmp_file.close()
                     return tmp_file.name
             else:
-                raise GeocoderParseError("Unknown response content type: %s" % content_type)
-       
+                raise GeocoderParseError(
+                    "Unknown response content type: %s" %
+                    content_type)
+
     def _read_http_error_body(self, error):
         try:
             return self._decode_page(error)
@@ -642,7 +648,7 @@ class RequestsAdapter(BaseSyncAdapter):
                                          headers=req_headers,
                                          stream=True
                                          )
-                
+
         except Exception as error:
             message = str(error)
             if isinstance(error, SocketTimeout):
@@ -795,7 +801,7 @@ class AioHTTPAdapter(BaseAsyncAdapter):
                         "Could not deserialize using deserializer:\n%s"
                         % (await resp.text())
                     )
-    
+
     async def post_csv(self, url, *, data, file, timeout, headers):
         """
         Make a POST request to the given URL, sending the provided file as data,
@@ -805,7 +811,7 @@ class AioHTTPAdapter(BaseAsyncAdapter):
         `data` is expected to be a file path (str or Path-like).
         """
         with self._normalize_exceptions():
-            
+
             file_obj = None
             try:
                 proxy = None
@@ -848,7 +854,8 @@ class AioHTTPAdapter(BaseAsyncAdapter):
                         try:
                             return json.loads(text)
                         except Exception:
-                            raise GeocoderParseError("Could not parse JSON response:\n%s" % text)
+                            raise GeocoderParseError(
+                                "Could not parse JSON response:\n%s" % text)
                     elif (
                         "text/csv" in content_type
                         or "application/csv" in content_type
@@ -864,7 +871,8 @@ class AioHTTPAdapter(BaseAsyncAdapter):
                             tmp_file.close()
                             return tmp_file.name
                     else:
-                        raise GeocoderParseError("Unknown response content type: %s" % content_type)
+                        raise GeocoderParseError(
+                            "Unknown response content type: %s" % content_type)
             finally:
                 if file_obj is not None:
                     file_obj.close()

@@ -1,14 +1,13 @@
 import asyncio
 import csv
 import os
-import tempfile
 from typing import override
 import warnings
 from functools import partial
 from urllib.parse import urlencode
 
 from geocodepy.exc import GeocoderQueryError, GeocoderServiceError
-from geocodepy.geocoders.base import DEFAULT_SENTINEL, Geocoder, GeocoderWithCSVBatch
+from geocodepy.geocoders.base import DEFAULT_SENTINEL, GeocoderWithCSVBatch
 from geocodepy.location import Location
 from geocodepy.util import logger
 
@@ -113,7 +112,7 @@ class IGNFrance(GeocoderWithCSVBatch):
             adapter_factory=adapter_factory,
             cache=cache,
             cache_expire=cache_expire,
-            min_delay_seconds=1/49  # from the API doc: "50 requêtes par seconde"
+            min_delay_seconds=1 / 49  # from the API doc: "50 requêtes par seconde"
         )
 
         if api_key or username or password or referer:
@@ -132,8 +131,11 @@ class IGNFrance(GeocoderWithCSVBatch):
             '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.geocode_path)
         )
         self.geocode_batch_api = (
-            '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.geocode_batch_path)
-        )
+            '%s://%s%s%s' %
+            (self.scheme,
+             self.domain,
+             self.api_path,
+             self.geocode_batch_path))
         self.reverse_api = (
             '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.reverse_path)
         )
@@ -200,7 +202,12 @@ class IGNFrance(GeocoderWithCSVBatch):
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
 
-    def _geocode_batch_sync(self, tmp_file, indexes="address,poi", timeout=60, callback=None):
+    def _geocode_batch_sync(
+            self,
+            tmp_file,
+            indexes="address,poi",
+            timeout=60,
+            callback=None):
         try:
             return self._call_geocoder(
                 self.geocode_batch_api,
@@ -208,7 +215,7 @@ class IGNFrance(GeocoderWithCSVBatch):
                 timeout=timeout,
                 file=tmp_file.name,
                 data={"columns": "query", "indexes": indexes},
-                )
+            )
         finally:
             os.unlink(tmp_file.name)
         #   "section": "",
@@ -227,7 +234,12 @@ class IGNFrance(GeocoderWithCSVBatch):
         #   "lat": "",
         #   "result_columns": "",
 
-    async def _geocode_batch_async(self, tmp_file, indexes="address,poi", timeout=60, callback=None):
+    async def _geocode_batch_async(
+            self,
+            tmp_file,
+            indexes="address,poi",
+            timeout=60,
+            callback=None):
         def _callback_delete_file(*args, **kwargs):
             try:
                 os.unlink(tmp_file.name)
@@ -242,28 +254,32 @@ class IGNFrance(GeocoderWithCSVBatch):
             timeout=timeout,
             file=tmp_file.name,
             data={"columns": "query", "indexes": indexes},
-            )
-    
+        )
+
     @override
     def geocode_batch(self, addresses, indexes="address,poi", timeout=60):
         """
         IGN offers a native batch geocoding service. The list of addresses is written in a
         temporary file and sent to the geocoding service.
         """
-        #return super().geocode_batch(addresses, exactly_one=exactly_one, **kwargs)
+        # return super().geocode_batch(addresses, exactly_one=exactly_one, **kwargs)
         # TODO how to skip the results in cache?
         callback = partial(self._parse_csv)
         indexes = self._parse_index(indexes)
-        files = self._write_csv(addresses, max_size=1024*1024*1)  # accept 1Mb, the official limit is 50Mb
+        # accept 1Mb, the official limit is 50Mb
+        files = self._write_csv(addresses, max_size=1024 * 1024 * 1)
         try:
             if self._run_async:
                 async def fut():
                     sem = asyncio.Semaphore(5)
-                    
+
                     async def one(tmp_file):
                         async with sem:
-                            return await self._geocode_batch_async(tmp_file, indexes, timeout, callback)
-                    
+                            return await self._geocode_batch_async(tmp_file,
+                                                                   indexes,
+                                                                   timeout,
+                                                                   callback)
+
                     grouped = await asyncio.gather(*(one(f) for f in files),
                                                    return_exceptions=True)
 
@@ -282,7 +298,9 @@ class IGNFrance(GeocoderWithCSVBatch):
                 # call sequentially the geocoding of every single file
                 results = []
                 for tmp_file in files:
-                    results.extend(self._geocode_batch_sync(tmp_file, indexes, timeout, callback))
+                    results.extend(
+                        self._geocode_batch_sync(
+                            tmp_file, indexes, timeout, callback))
                 return results
         finally:
             pass
@@ -292,7 +310,7 @@ class IGNFrance(GeocoderWithCSVBatch):
 
     def _parse_feature_csv(self, row, mapping):
         # print("in _parse_feature_csv, row:", row)
-        
+
         # TODO should we keep all the columns?
         feature_dict = {
             key.replace("result_", ""): None if row[index] == "" else row[index]
@@ -302,7 +320,7 @@ class IGNFrance(GeocoderWithCSVBatch):
         # debug
         # for key, value in feature_dict.items():
         #     print("\t", key, ":", value)
-    
+
         if feature_dict.get('status') != 'ok':
             return None
         del feature_dict['status']
@@ -320,19 +338,19 @@ class IGNFrance(GeocoderWithCSVBatch):
 
         self._check_type(feature_dict.get('type', None))
 
-        #TODO for POI?
+        # TODO for POI?
         # type_feature = feature_dict.get('type')
         # if not type_feature == 'Feature':
         #     raise GeocoderServiceError(
         #         "Expected a Feature as a result but received a %s" % type_feature
         #     )
-        
+
         # Parse each resource.
         latitude = float(feature_dict.get('latitude'))
         longitude = float(feature_dict.get('longitude'))
         del feature_dict['latitude']
         del feature_dict['longitude']
-        
+
         return Location(placename, (latitude, longitude), feature_dict)
 
     def _parse_csv(self, file):
@@ -350,7 +368,7 @@ class IGNFrance(GeocoderWithCSVBatch):
                     # TODO multiple results?
         finally:
             os.unlink(file)
-            
+
     def reverse(
             self,
             query,
