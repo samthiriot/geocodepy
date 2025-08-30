@@ -35,7 +35,8 @@ class OpenCage(Geocoder):
             ssl_context=DEFAULT_SENTINEL,
             adapter_factory=None,
             cache=None,
-            cache_expire=None
+            cache_expire=None,
+            min_delay_seconds=1.0
     ):
         """
 
@@ -77,6 +78,10 @@ class OpenCage(Geocoder):
             Enables to query again the geocoder in case its database, or algorithm,
             has changed. Default is 30 days.
 
+        :param float min_delay_seconds:
+            Minimum delay between requests. Default is 1.0, the limitation for free plan.
+            Check the OpenCageData documentation https://opencagedata.com/api#rate-limiting .
+
             .. versionadded:: 2.0
         """
         super().__init__(
@@ -87,7 +92,8 @@ class OpenCage(Geocoder):
             ssl_context=ssl_context,
             adapter_factory=adapter_factory,
             cache=cache,
-            cache_expire=cache_expire
+            cache_expire=cache_expire,
+            min_delay_seconds=min_delay_seconds
         )
 
         self.api_key = api_key

@@ -137,8 +137,7 @@ class BaseTestGeocoder(ABC):
             return
 
         for result, expected in zip(results, expecteds):
-            self._verify_request(result, exactly_one=payloads.get('exactly_one', True),
-                                 **expected)
+            self._verify_request(result, **expected)
         return results
 
     async def reverse_run(
