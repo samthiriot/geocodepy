@@ -362,9 +362,15 @@ class Geocoder:
 
         Additional parameters will be bassed to the geocoder.geocode method.
         """
-
-        return [self.geocode(address, exactly_one=True, timeout=timeout, **kwargs)
-                for address in addresses]
+        results = []
+        for address in addresses:
+            result = None
+            try:
+                result = self.geocode(address, exactly_one=True, timeout=timeout, **kwargs)
+            except Exception as e:
+                print("error geocoding", address, e)
+            results.append(result)
+        return results
 
     def __enter__(self):
         """Context manager for synchronous adapters. At exit all
@@ -468,7 +474,6 @@ class Geocoder:
 
     def _store_in_cache(self, url, result, expire):
         if self.cache is not None:
-            print("storing in cache", url)
             self.cache.set(url, result, expire=expire)
 
     def _call_geocoder(
