@@ -311,6 +311,8 @@ class Geocoder:
             self.__rate_limiter = None
 
         self.cache = None
+        self.cache_expire = (options.default_cache_expire if cache_expire is None
+                             else int(cache_expire))
         if diskcache_available:
             if isinstance(cache, Cache):
                 self.cache = cache
@@ -338,8 +340,6 @@ class Geocoder:
                         "The cache for %s already contains %s items",
                         self.__class__.__name__,
                         size)
-            self.cache_expire = (options.default_cache_expire if cache_expire is None
-                                 else int(cache_expire))
         elif cache is not None and cache is not False:
             raise ConfigurationError("please install diskcache to activate cache")
 
@@ -642,7 +642,6 @@ class Geocoder:
 
     # def reverse(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
     #     raise NotImplementedError()
-
 
 
 def _format_coordinate(coordinate):
