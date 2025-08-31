@@ -137,6 +137,8 @@ class BaseTestGeocoder(ABC):
             return
 
         for result, expected in zip(results, expecteds):
+            print(result)
+            print(expected)
             self._verify_request(result, **expected)
         return results
 

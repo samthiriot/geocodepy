@@ -58,7 +58,7 @@ class TestBANFrance(BaseTestGeocoder):
         }
 
         results = await self.geocode_batch_run(
-            {"addresses": test_data.keys(), "exactly_one": True},
+            {"addresses": test_data.keys()},
             test_data.values())
 
         assert len(results) == len(test_data)

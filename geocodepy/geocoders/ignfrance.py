@@ -250,7 +250,7 @@ class IGNFrance(Geocoder):
 
         return await self._call_geocoder(
             self.geocode_batch_api,
-            callback,
+            _callback_delete_file,
             timeout=timeout,
             file=tmp_file.name,
             data={"columns": "query", "indexes": indexes},

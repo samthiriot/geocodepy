@@ -372,8 +372,8 @@ class Geocoder:
                 result = self.geocode(
                     address, exactly_one=True, timeout=timeout, **kwargs)
                 print(".", end='')
-            except Exception:
-                # print("error geocoding", address, e)
+            except Exception as e:
+                self.logger.error("error geocoding %s: %s", address, e, exc_info=True)
                 print("E", end='')
             sys.stdout.flush()
             results.append(result)
