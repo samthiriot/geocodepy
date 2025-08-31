@@ -146,7 +146,7 @@ A checklist for adding a new geocoder:
     adding a Nominatim-based service, then your new geocoder class should
     probably extend the `geocodepy.geocoders.Nominatim` class.
 
-2.  Follow the instructions in the `geopy/geocoders/__init__.py` module for
+2.  Follow the instructions in the `geocodepy/geocoders/__init__.py` module for
     adding the required imports.
 
 3.  Create a test module in the `test/geocoders` directory. If your geocoder
@@ -188,4 +188,16 @@ The target service parameters might change, as well as the service's API,
 but the geocoder class's public API should stay the same. It's almost
 impossible to achieve that when a pass-through of arbitrary parameters is
 allowed.
+
+### Help with testing
+
+
+It is sometimes necessary to debug what happens during HTTP calls. This enables verbose logging.
+
+    from http.client import HTTPConnection
+    HTTPConnection.debuglevel = 1
+
+    requests_log = logging.getLogger("requests.packages.urllib3")
+    requests_log.setLevel(logging.DEBUG)
+    requests_log.propagate = True
 

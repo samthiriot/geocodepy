@@ -217,6 +217,7 @@ class IGNFrance(GeocoderWithCSVBatch):
                 data={"columns": "query", "indexes": indexes},
             )
         finally:
+            self.logger.debug("deleting CSV file after batch geocoding", tmp_file.name)
             os.unlink(tmp_file.name)
         #   "section": "",
         #   "municipalitycode": "",
@@ -321,10 +322,9 @@ class IGNFrance(GeocoderWithCSVBatch):
         # for key, value in feature_dict.items():
         #     print("\t", key, ":", value)
 
-        if feature_dict.get('status') != 'ok':
+        if feature_dict.pop('status') != 'ok':
             return None
-        del feature_dict['status']
-
+        
         placename = feature_dict.get('label', None)
         # in case of POI, the service does not always return a label
         if placename is None:
@@ -346,10 +346,8 @@ class IGNFrance(GeocoderWithCSVBatch):
         #     )
 
         # Parse each resource.
-        latitude = float(feature_dict.get('latitude'))
-        longitude = float(feature_dict.get('longitude'))
-        del feature_dict['latitude']
-        del feature_dict['longitude']
+        latitude = float(feature_dict.pop('latitude'))
+        longitude = float(feature_dict.pop('longitude'))
 
         return Location(placename, (latitude, longitude), feature_dict)
 
@@ -367,6 +365,7 @@ class IGNFrance(GeocoderWithCSVBatch):
                     yield self._parse_feature_csv(row, mapping)
                     # TODO multiple results?
         finally:
+            self.logger.debug("deleting CSV file after parsing", file)
             os.unlink(file)
 
     def reverse(

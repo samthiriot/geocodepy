@@ -390,9 +390,10 @@ class Nominatim(Geocoder):
 
     def _parse_code(self, place):
         # Parse each resource.
-        latitude = place.get('lat', None)
-        longitude = place.get('lon', None)
-        placename = place.get('display_name', None)
+        latitude = place.pop('lat', None)
+        longitude = place.pop('lon', None)
+        placename = place.pop('display_name', None)
+        
         if latitude is not None and longitude is not None:
             latitude = float(latitude)
             longitude = float(longitude)

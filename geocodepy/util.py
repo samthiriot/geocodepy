@@ -6,7 +6,7 @@ NUMBER_TYPES = (int, float, Decimal)
 __version__ = "2.4.1"
 __version_info__ = (2, 4, 1)
 
-logger = logging.getLogger('geopy')
+logger = logging.getLogger('geocodepy')
 
 
 def pairwise(seq):

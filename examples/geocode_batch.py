@@ -1,5 +1,6 @@
 from http.client import HTTPConnection
 from geocodepy.geocoders import IGNFrance
+from geocodepy.geocoders.geoapify import Geoapify
 from geocodepy.geocoders.nominatim import Nominatim
 
 
@@ -12,9 +13,10 @@ requests_log.propagate = True
 
 from http.client import HTTPConnection
 
-HTTPConnection.debuglevel = 21
+HTTPConnection.debuglevel = 1
 
 geocoder = IGNFrance(cache=False)
+geocoder = Geoapify(api_key="290b1d1a2b9f4882a7ff83d35ad994f7")
 
 addresses_france = [
     "55 Rue du Faubourg Saint-Honoré, 75008 Paris, France", 
@@ -32,7 +34,7 @@ def gen_many_addresses(max):
 
 
 # geocode an address
-results = geocoder.geocode_batch(addresses_france, indexes="address")
+results = geocoder.geocode_batch(addresses_france)
 for i, result in enumerate(results):
     print("\n", i, repr(result))
     if result is not None:
