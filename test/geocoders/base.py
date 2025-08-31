@@ -20,12 +20,18 @@ class DummySyncAdapter(BaseSyncAdapter):
     def get_text(self, *args, **kwargs):  # pragma: no cover
         raise NotImplementedError
 
+    def post_csv(self, *args, **kwargs):  # pragma: no cover
+        raise NotImplementedError
+
 
 class DummyAsyncAdapter(BaseAsyncAdapter):
     async def get_json(self, *args, **kwargs):  # pragma: no cover
         raise NotImplementedError
 
     async def get_text(self, *args, **kwargs):  # pragma: no cover
+        raise NotImplementedError
+
+    async def post_csv(self, *args, **kwargs):  # pragma: no cover
         raise NotImplementedError
 
 

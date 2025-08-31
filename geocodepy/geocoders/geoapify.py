@@ -5,23 +5,25 @@ from geocodepy.geocoders.base import DEFAULT_SENTINEL, Geocoder
 from geocodepy.location import Location
 from geocodepy.util import logger
 
-__all__ = ("BANFrance", )
+__all__ = ("Geoapify", )
 
 
-class BANFrance(Geocoder):
-    """Geocoder using the Base Adresse Nationale France API.
+class Geoapify(Geocoder):
+    """Geocoder using the Geoapify API.
 
     Documentation at:
-        https://adresse.data.gouv.fr/api
+        https://apidocs.geoapify.com/docs/geocoding/
     """
 
-    geocode_path = '/search'
-    reverse_path = '/reverse'
+    geocode_path = '/v1/geocode/search'
+    # geocode_batch_path = '/v1/batch/geocode/search'
+    reverse_path = '/v1/geocode/reverse'
 
     def __init__(
             self,
+            api_key,
             *,
-            domain='api-adresse.data.gouv.fr',
+            domain='api.geoapify.com',
             scheme=None,
             timeout=DEFAULT_SENTINEL,
             proxies=DEFAULT_SENTINEL,
@@ -32,8 +34,11 @@ class BANFrance(Geocoder):
             cache_expire=None
     ):
         """
+        :param str api_key: The API key required by Geoapify.com
+            to perform geocoding requests. You can get your key here:
+            https://www.geoapify.com/
 
-        :param str domain: Currently it is ``'api-adresse.data.gouv.fr'``, can
+        :param str domain: Currently it is ``'api.geoapify.com'``, can
             be changed for testing purposes.
 
         :param str scheme:
@@ -79,6 +84,7 @@ class BANFrance(Geocoder):
             cache_expire=cache_expire,
             min_delay_seconds=1 / 45
         )
+        self.api_key = api_key
         self.domain = domain.strip('/')
 
         self.geocode_api = (
@@ -92,9 +98,10 @@ class BANFrance(Geocoder):
             self,
             query,
             *,
-            limit=None,
+            limit=5,
             exactly_one=True,
-            timeout=DEFAULT_SENTINEL
+            timeout=DEFAULT_SENTINEL,
+            language=None
     ):
         """
         Return a location point by address.
@@ -103,7 +110,7 @@ class BANFrance(Geocoder):
 
         :param int limit: Defines the maximum number of items in the
             response structure. If not provided and there are multiple
-            results the BAN API will return 5 results by default.
+            results the Geoapify API will return 5 results by default.
             This will be reset to one if ``exactly_one`` is True.
 
         :param bool exactly_one: Return one result or a list of results, if
@@ -114,17 +121,25 @@ class BANFrance(Geocoder):
             exception. Set this only if you wish to override, on this call
             only, the value set during the geocoder's initialization.
 
+        :param str language: Result language. 2-character ISO 639-1 language codes
+            are supported (for instance: 'fr').
+
         :rtype: ``None``, :class:`geocodepy.location.Location` or a list of them, if
             ``exactly_one=False``.
 
         """
 
         params = {
-            'q': query,
+            'apiKey': self.api_key,
+            'text': query,
+            'format': 'json',
         }
 
         if limit is not None:
             params['limit'] = limit
+
+        if language is not None:
+            params['lang'] = language
 
         url = "?".join((self.geocode_api, urlencode(params)))
 
@@ -136,8 +151,10 @@ class BANFrance(Geocoder):
             self,
             query,
             *,
+            limit=5,
             exactly_one=True,
-            timeout=DEFAULT_SENTINEL
+            timeout=DEFAULT_SENTINEL,
+            language=None
     ):
         """
         Return an address by location point.
@@ -147,6 +164,11 @@ class BANFrance(Geocoder):
         :type query: :class:`geocodepy.point.Point`, list or tuple of ``(latitude,
             longitude)``, or string as ``"%(latitude)s, %(longitude)s"``.
 
+        :param int limit: Defines the maximum number of items in the
+            response structure. If not provided and there are multiple
+            results the Geoapify API will return 5 results by default.
+            This will be reset to one if ``exactly_one`` is True.
+
         :param bool exactly_one: Return one result or a list of results, if
             available.
 
@@ -154,6 +176,9 @@ class BANFrance(Geocoder):
             to respond before raising a :class:`geocodepy.exc.GeocoderTimedOut`
             exception. Set this only if you wish to override, on this call
             only, the value set during the geocoder's initialization.
+
+        :param str language: Result language. 2-character ISO 639-1 language codes
+            are supported (for instance: 'fr').
 
         :rtype: ``None``, :class:`geocodepy.location.Location` or a list of them, if
             ``exactly_one=False``.
@@ -168,7 +193,15 @@ class BANFrance(Geocoder):
         params = {
             'lat': lat,
             'lon': lon,
+            'apiKey': self.api_key,
+            'format': 'json',
         }
+
+        if limit is not None:
+            params['limit'] = limit
+
+        if language is not None:
+            params['lang'] = language
 
         url = "?".join((self.reverse_api, urlencode(params)))
         logger.debug("%s.reverse: %s", self.__class__.__name__, url)
@@ -176,18 +209,15 @@ class BANFrance(Geocoder):
         return self._call_geocoder(url, callback, timeout=timeout)
 
     def _parse_feature(self, feature):
-        # Parse each resource.
-        latitude = feature.get('geometry', {}).get('coordinates', [])[1]
-        longitude = feature.get('geometry', {}).get('coordinates', [])[0]
-        placename = feature.get('properties', {}).get('label')
-        # postcode = feature.get('properties', {}).get('postcode')
-
+        latitude = feature.get('lat', None)
+        longitude = feature.get('lon', None)
+        placename = feature.get('formatted', None)
         return Location(placename, (latitude, longitude), feature)
 
     def _parse_json(self, response, exactly_one):
-        if response is None or 'features' not in response:
+        if response is None or 'results' not in response:
             return None
-        features = response['features']
+        features = response['results']
         if not len(features):
             return None
         if exactly_one:

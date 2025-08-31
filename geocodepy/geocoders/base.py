@@ -1,7 +1,10 @@
 import asyncio
+import csv
 import functools
 import inspect
 import logging
+import sys
+import tempfile
 import threading
 
 from geocodepy import compat
@@ -25,7 +28,7 @@ from geocodepy.exc import (
 )
 from geocodepy.extra.rate_limiter import AsyncRateLimiter, RateLimiter
 from geocodepy.point import Point
-from geocodepy.util import __version__, logger
+from geocodepy.util import __version__
 
 try:
     import os
@@ -39,6 +42,7 @@ except ImportError:
 # the role of cache expiration is to reflect the fact databases of
 # geocoders can be updated.
 _DEFAULT_CACHE_EXPIRE = 60 * 60 * 24 * 30  # 30 days
+_CACHE_NORESULT = "NORESULT"
 
 __all__ = (
     "Geocoder",
@@ -49,7 +53,7 @@ _DEFAULT_USER_AGENT = "geopy/%s" % __version__
 
 _DEFAULT_ADAPTER_CLASS = next(
     adapter_cls
-    for adapter_cls in (RequestsAdapter, URLLibAdapter,)
+    for adapter_cls in (RequestsAdapter, URLLibAdapter, )
     if adapter_cls.is_available
 )
 
@@ -251,6 +255,8 @@ class Geocoder:
             cache_expire=None,
             min_delay_seconds=None
     ):
+        self.logger = logging.getLogger(self.__class__.__name__)
+
         self.scheme = scheme or options.default_scheme
         if self.scheme not in ('http', 'https'):
             raise ConfigurationError(
@@ -274,9 +280,9 @@ class Geocoder:
             ssl_context=self.ssl_context,
         )
         if isinstance(self.adapter, BaseSyncAdapter):
-            self.__run_async = False
+            self._run_async = False
         elif isinstance(self.adapter, BaseAsyncAdapter):
-            self.__run_async = True
+            self._run_async = True
         else:
             raise ConfigurationError(
                 "Adapter %r must extend either BaseSyncAdapter or BaseAsyncAdapter"
@@ -284,7 +290,7 @@ class Geocoder:
             )
 
         if min_delay_seconds is not None:
-            if self.__run_async:
+            if self._run_async:
                 self.__rate_limiter = AsyncRateLimiter(
                     None,
                     min_delay_seconds=min_delay_seconds,
@@ -298,13 +304,15 @@ class Geocoder:
                     max_retries=10,
                     swallow_exceptions=True,
                     return_value_on_exception=None)
-            logger.debug(
+            self.logger.debug(
                 "Using rate limiter with a delay of %s seconds",
                 min_delay_seconds)
         else:
             self.__rate_limiter = None
 
         self.cache = None
+        self.cache_expire = (options.default_cache_expire if cache_expire is None
+                             else int(cache_expire))
         if diskcache_available:
             if isinstance(cache, Cache):
                 self.cache = cache
@@ -314,26 +322,24 @@ class Geocoder:
                     "geocodepy",
                     "cache",
                     self.__class__.__name__)
-                logger.info(
+                self.logger.info(
                     "The cache for %s is located at %s",
                     self.__class__.__name__,
                     path)
                 self.cache = Cache(
                     path,
                     eviction_policy='least-frequently-used',
-                    statistics=logger.isEnabledFor(
+                    statistics=self.logger.isEnabledFor(
                         logging.INFO))
             if self.cache is not None:
                 # invalidate cached results at init, to save space and get quicker results
                 self.cache.expire()
                 size = len(self.cache)
                 if size > 0:
-                    logger.info(
+                    self.logger.info(
                         "The cache for %s already contains %s items",
                         self.__class__.__name__,
                         size)
-            self.cache_expire = (options.default_cache_expire if cache_expire is None
-                                 else int(cache_expire))
         elif cache is not None and cache is not False:
             raise ConfigurationError("please install diskcache to activate cache")
 
@@ -346,7 +352,7 @@ class Geocoder:
             return False
         return url in self.cache
 
-    def geocode_batch(self, addresses, **kwargs):
+    def geocode_batch(self, addresses, timeout=DEFAULT_SENTINEL, **kwargs):
         """
         Batch geocoding. The default implement just calls sequentially
         the geocoder.geocode method for each address.
@@ -359,8 +365,20 @@ class Geocoder:
 
         Additional parameters will be bassed to the geocoder.geocode method.
         """
-
-        return [self.geocode(address, **kwargs) for address in addresses]
+        results = []
+        for address in addresses:
+            result = None
+            try:
+                result = self.geocode(
+                    address, exactly_one=True, timeout=timeout, **kwargs)
+                print(".", end='')
+            except Exception as e:
+                self.logger.error("error geocoding %s: %s", address, e, exc_info=True)
+                print("E", end='')
+            sys.stdout.flush()
+            results.append(result)
+        print()
+        return results
 
     def __enter__(self):
         """Context manager for synchronous adapters. At exit all
@@ -369,7 +387,7 @@ class Geocoder:
         In synchronous mode context manager usage is not required,
         and connections will be automatically closed by garbage collection.
         """
-        if self.__run_async:
+        if self._run_async:
             raise TypeError("`async with` must be used with async adapters")
         res = self.adapter.__enter__()
         assert res is self.adapter, "adapter's __enter__ must return `self`"
@@ -386,7 +404,7 @@ class Geocoder:
         however, it is strongly advised to avoid warnings about
         resources leaks.
         """
-        if not self.__run_async:
+        if not self._run_async:
             raise TypeError("`async with` cannot be used with sync adapters")
         res = await self.adapter.__aenter__()
         assert res is self.adapter, "adapter's __enter__ must return `self`"
@@ -447,6 +465,29 @@ class Geocoder:
         """
         pass
 
+    def _get_adapter_call(self, is_json, data):
+        if data is not None:
+            return self.adapter.post_csv
+        if self.__rate_limiter is None:
+            # no rate limiter, we can call the geocoder directly
+            return self.adapter.get_json if is_json else self.adapter.get_text
+        else:
+            # we have a rate limiter, we need to wrap the call to the geocoder
+            return self.adapter.get_json if is_json else self.adapter.get_text
+
+    def _search_in_cache(self, url):
+        if self.cache is not None:
+            return self.cache.get(url, None)
+        return None
+
+    def _store_in_cache(self, url, result, expire):
+        if self.cache is None:
+            return
+        if result is None:
+            self.cache.set(url, _CACHE_NORESULT, expire=expire)
+        else:
+            self.cache.set(url, result, expire=expire)
+
     def _call_geocoder(
             self,
             url,
@@ -454,7 +495,9 @@ class Geocoder:
             *,
             timeout=DEFAULT_SENTINEL,
             is_json=True,
-            headers=None
+            headers=None,
+            data=None,
+            file=None
     ):
         """
         For a generated query URL, get the results.
@@ -468,32 +511,43 @@ class Geocoder:
                    else self.timeout)
 
         try:
-            result = self.cache.get(url, None) if self.cache is not None else None
-            if result is None:
-                # the result was not cached, we need to call the geocoder
-                if self.__rate_limiter is None:
-                    # no rate limiter, we can call the geocoder directly
-                    if is_json:
-                        result = self.adapter.get_json(
-                            url, timeout=timeout, headers=req_headers)
-                    else:
-                        result = self.adapter.get_text(
-                            url, timeout=timeout, headers=req_headers)
+            from_cache = False
+            # search in cache
+            result = None if data is not None else self._search_in_cache(url)
+            if result is not None:
+                from_cache = True
+                # found in cache
+                if result == _CACHE_NORESULT:
+                    result = None
+            else:
+                # no cache, we need to call the geocoder
+                adapter_call = self._get_adapter_call(is_json, data)
+                if file is not None:
+                    result = adapter_call(url, timeout=timeout, headers=req_headers,
+                                          data=data, file=file)
                 else:
-                    # we have a rate limiter, we need to wrap the call to the geocoder
-                    self.__rate_limiter.func = (self.adapter.get_json if is_json
-                                                else self.adapter.get_text)
-                    result = self.__rate_limiter(
-                        url, timeout=timeout, headers=req_headers)
+                    result = adapter_call(url, timeout=timeout, headers=req_headers)
 
-            if self.__run_async:
+            # patch the callback for caching
+            def callback_with_cache(result):
+                if data is None and not from_cache:
+                    try:
+                        self._store_in_cache(url, result, expire=self.cache_expire)
+                    except Exception as e:
+                        self.logger.warning("error when trying to store in cache: %s", e)
+                        raise
+                try:
+                    return callback(result)
+                except Exception as e:
+                    self.logger.error("error in callback_with_cache: %s", e)
+                    raise
+
+            if self._run_async:
                 async def fut():
                     try:
-                        res = callback(await result)
+                        res = callback_with_cache(await result)
                         if inspect.isawaitable(res):
                             res = await res
-                        if self.cache is not None:
-                            self.cache.set(url, result, expire=self.cache_expire)
                         return res
                     except Exception as error:
                         res = self._adapter_error_handler(error)
@@ -503,9 +557,7 @@ class Geocoder:
 
                 return fut()
             else:
-                if self.cache is not None:
-                    self.cache.set(url, result, expire=self.cache_expire)
-                return callback(result)
+                return callback_with_cache(result)
         except Exception as error:
             res = self._adapter_error_handler(error)
             if res is NONE_RESULT:
@@ -515,7 +567,7 @@ class Geocoder:
     def _adapter_error_handler(self, error):
         if isinstance(error, AdapterHTTPError):
             if error.text:
-                logger.info(
+                self.logger.info(
                     'Received an HTTP error (%s): %s',
                     error.status_code,
                     error.text,
@@ -541,7 +593,7 @@ class Geocoder:
             try:
                 hits, misses = self.cache.stats(enable=False, reset=True)
                 self.cache.expire()
-                logger.info(
+                self.logger.info(
                     'Closing cache for %s: %s hits, %s misses. '
                     'The cache contains %s items for %s Mb, stored in %s',
                     self.__class__.__name__,
@@ -555,6 +607,36 @@ class Geocoder:
             finally:
                 self.cache.close()
 
+    def _write_csv(self, addresses, max_size=1024 * 1024 * 1):
+        """
+        Write the addresses to a CSV file. Returns file-like objects.
+        If the batch is too large, it will be split into several files.
+        """
+
+        tmp_file = writer = None
+
+        for address in addresses:
+            if tmp_file is None:
+                tmp_file = tempfile.NamedTemporaryFile(
+                    # encoding='utf-8',  # what the official doc specifies
+                    encoding='latin-1',  # what actually works
+                    delete=False,
+                    prefix="addresses_", suffix=".csv",
+                    mode='w', newline="\n", )
+                #
+                # quoting=csv.QUOTE_STRINGS
+                writer = csv.writer(tmp_file, lineterminator="\n")
+                writer.writerow(["query"])
+            writer.writerow([address])
+
+            if tmp_file.tell() >= max_size:
+                tmp_file.close()
+                self.logger.debug("written addresses to temporary file", tmp_file.name)
+                yield tmp_file
+                tmp_file = None
+        tmp_file.close()
+        yield tmp_file
+
     # def geocode(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
     #     raise NotImplementedError()
 
@@ -565,7 +647,7 @@ class Geocoder:
 def _format_coordinate(coordinate):
     if abs(coordinate) >= 1:
         return coordinate  # use the default arbitrary precision scientific notation
-    return f"{coordinate:.7f}"  # noqa
+    return f"{coordinate: .7f}"  # noqa
 
 
 def _synchronized(func):

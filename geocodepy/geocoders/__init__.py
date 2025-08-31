@@ -193,6 +193,7 @@ __all__ = (
     "BANFrance",
     "Bing",
     "DataBC",
+    "Geoapify",
     "GeocodeEarth",
     "Geocodio",
     "Geokeo",
@@ -228,6 +229,7 @@ from geocodepy.geocoders.banfrance import BANFrance
 from geocodepy.geocoders.base import options
 from geocodepy.geocoders.bing import Bing
 from geocodepy.geocoders.databc import DataBC
+from geocodepy.geocoders.geoapify import Geoapify
 from geocodepy.geocoders.geocodeearth import GeocodeEarth
 from geocodepy.geocoders.geocodio import Geocodio
 from geocodepy.geocoders.geokeo import Geokeo
@@ -259,6 +261,7 @@ SERVICE_TO_GEOCODER = {
     "banfrance": BANFrance,
     "bing": Bing,
     "databc": DataBC,
+    "geoapify": Geoapify,
     "geocodeearth": GeocodeEarth,
     "geocodio": Geocodio,
     "geokeo": Geokeo,

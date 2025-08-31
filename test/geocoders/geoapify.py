@@ -1,16 +1,17 @@
-from geocodepy.geocoders import BANFrance
-from test.geocoders.util import BaseTestGeocoder
+from geocodepy.geocoders import Geoapify
+from test.geocoders.util import BaseTestGeocoder, env
 
 
-class TestBANFrance(BaseTestGeocoder):
+class TestGeoapify(BaseTestGeocoder):
 
     @classmethod
     def make_geocoder(cls, **kwargs):
-        return BANFrance(timeout=10, cache=False, **kwargs)
+        return Geoapify(timeout=10, api_key=env['GEOAPIFY_KEY'], cache=False, **kwargs)
 
     async def test_user_agent_custom(self):
-        geocoder = BANFrance(
+        geocoder = Geoapify(
             user_agent='my_user_agent/1.0',
+            api_key=env['GEOAPIFY_KEY'],
             cache=False
         )
         assert geocoder.headers['User-Agent'] == 'my_user_agent/1.0'
@@ -39,22 +40,22 @@ class TestBANFrance(BaseTestGeocoder):
     async def test_geocode_batch_addresses(self):
 
         test_data = {
-            "13 Rue de la Paix, 75002 Paris, France": {
-                "latitude": 48.86931,
-                "longitude": 2.316138,
-                "address": "13 Rue de la Paix 75002 Paris"},
+            "13 Rue de la Paix 75002 Paris": {
+                "latitude": 48.8693321,
+                "longitude": 2.3311085,
+                "address": "13 Rue de la Paix, 75002 Paris, France"},
             "Camp des Landes, 41200 VILLEFRANCHE-SUR-CHER": {
-                "latitude": 47.293048,
-                "longitude": 1.718985,
-                "address": "Le Camp des Landes 41200 Villefranche-sur-Cher"},
+                "latitude": 47.2931395,
+                "longitude": 1.7185992,
+                "address": "Le Camp des Landes, 41200 Villefranche-sur-Cher, France"},
             "1 Pl. de la Comédie, 69001 Lyon, France": {
                 "latitude": 45.767808,
                 "longitude": 4.835757,
-                "address": "1 Place de la Comédie 69001 Lyon"},
+                "address": "1 Place de la Comédie, 69001 Lyon, France"},
             "Palais de l'élysée, Paris": {
-                "latitude": 48.869397,
+                "latitude": 48.87037435,
                 "longitude": 2.31688,
-                "address": "Rue de l'Elysée 75008 Paris"},
+                "address": "Élysée Palace, Cour d'Honneur, 75008 Paris, France"},
         }
 
         results = await self.geocode_batch_run(

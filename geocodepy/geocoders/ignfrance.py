@@ -1,3 +1,6 @@
+import asyncio
+import csv
+import os
 import warnings
 from functools import partial
 from urllib.parse import urlencode
@@ -5,7 +8,6 @@ from urllib.parse import urlencode
 from geocodepy.exc import GeocoderQueryError, GeocoderServiceError
 from geocodepy.geocoders.base import DEFAULT_SENTINEL, Geocoder
 from geocodepy.location import Location
-from geocodepy.util import logger
 
 __all__ = ("IGNFrance", )
 
@@ -19,6 +21,7 @@ class IGNFrance(Geocoder):
 
     api_path = '/geocodage'
     geocode_path = '/search'
+    geocode_batch_path = '/search/csv'
     reverse_path = '/reverse'
 
     def __init__(
@@ -107,7 +110,7 @@ class IGNFrance(Geocoder):
             adapter_factory=adapter_factory,
             cache=cache,
             cache_expire=cache_expire,
-            min_delay_seconds=1 / 50
+            min_delay_seconds=1 / 49  # from the API doc: "50 requêtes par seconde"
         )
 
         if api_key or username or password or referer:
@@ -125,6 +128,12 @@ class IGNFrance(Geocoder):
         self.geocode_api = (
             '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.geocode_path)
         )
+        self.geocode_batch_api = (
+            '%s://%s%s%s' %
+            (self.scheme,
+             self.domain,
+             self.api_path,
+             self.geocode_batch_path))
         self.reverse_api = (
             '%s://%s%s%s' % (self.scheme, self.domain, self.api_path, self.reverse_path)
         )
@@ -187,9 +196,175 @@ class IGNFrance(Geocoder):
 
         url = "?".join((self.geocode_api, urlencode(params)))
 
-        logger.debug("%s.geocode: %s", self.__class__.__name__, url)
+        self.logger.debug("geocode: %s", url)
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
+
+    def _geocode_batch_sync(
+            self,
+            tmp_file,
+            indexes="address,poi",
+            timeout=60,
+            callback=None):
+        try:
+            return self._call_geocoder(
+                self.geocode_batch_api,
+                callback,
+                timeout=timeout,
+                file=tmp_file.name,
+                data={"columns": "query", "indexes": indexes},
+            )
+        finally:
+            self.logger.debug("deleting CSV file after batch geocoding: %s",
+                              tmp_file.name)
+            os.unlink(tmp_file.name)
+        #   "section": "",
+        #   "municipalitycode": "",
+        #   "number": "",
+        #   "lon": "",
+        #   "postcode": "",
+        #   "oldmunicipalitycode": "",
+        #   "citycode": "",
+        #   "type": "",
+        #   "result_columns": "",
+        #   "districtcode": "",
+        #   "category": "",
+        #   "departmentcode": "",
+        #   "sheet": "",
+        #   "lat": "",
+        #   "result_columns": "",
+
+    async def _geocode_batch_async(
+            self,
+            tmp_file,
+            indexes="address,poi",
+            timeout=60,
+            callback=None):
+        def _callback_delete_file(*args, **kwargs):
+            try:
+                os.unlink(tmp_file.name)
+            except Exception as e:
+                print("error deleting file", e)
+                raise e
+            return callback(*args, **kwargs)
+
+        return await self._call_geocoder(
+            self.geocode_batch_api,
+            _callback_delete_file,
+            timeout=timeout,
+            file=tmp_file.name,
+            data={"columns": "query", "indexes": indexes},
+        )
+
+    def geocode_batch(self, addresses, indexes="address,poi", timeout=60):
+        """
+        IGN offers a native batch geocoding service. The list of addresses is written in a
+        temporary file and sent to the geocoding service.
+        """
+        # return super().geocode_batch(addresses, exactly_one=exactly_one, **kwargs)
+        # TODO how to skip the results in cache?
+        callback = partial(self._parse_csv)
+        indexes = self._parse_index(indexes)
+        # accept 1Mb, the official limit is 50Mb
+        files = self._write_csv(addresses, max_size=1024 * 1024 * 1)
+        try:
+            if self._run_async:
+                async def fut():
+                    sem = asyncio.Semaphore(5)
+
+                    async def one(tmp_file):
+                        async with sem:
+                            return await self._geocode_batch_async(tmp_file,
+                                                                   indexes,
+                                                                   timeout,
+                                                                   callback)
+
+                    grouped = await asyncio.gather(*(one(f) for f in files),
+                                                   return_exceptions=True)
+
+                    results = []
+                    for g in grouped:
+                        if isinstance(g, Exception):
+                            # à toi de voir: log, accumuler, ou re-raise
+                            raise g
+                        results.extend(g)
+                    return results
+
+                    # TODO delete files
+
+                return fut()
+            else:
+                # call sequentially the geocoding of every single file
+                results = []
+                for tmp_file in files:
+                    results.extend(
+                        self._geocode_batch_sync(
+                            tmp_file, indexes, timeout, callback))
+                return results
+        finally:
+            pass
+            # for tmp_file in files:
+            #     print("deleting file", tmp_file.name)
+            #     os.unlink(tmp_file.name)
+
+    def _parse_feature_csv(self, row, mapping):
+        # print("in _parse_feature_csv, row:", row)
+
+        # TODO should we keep all the columns?
+        feature_dict = {
+            key.replace("result_", ""): None if row[index] == "" else row[index]
+            for key, index in mapping.items()
+            if (key.startswith("result_") or key in ["latitude", "longitude", "query"])}
+
+        # debug
+        # for key, value in feature_dict.items():
+        #     print("\t", key, ":", value)
+
+        if feature_dict.pop('status') != 'ok':
+            return None
+
+        placename = feature_dict.get('label', None)
+        # in case of POI, the service does not always return a label
+        if placename is None:
+            # in this case we do our best to generate something looking like an
+            # address, in the form <toponym> <postcode> <city>
+            placename = " ".join(e for e in [
+                feature_dict.get('toponym'),
+                feature_dict.get('postcode', None),
+                feature_dict.get('city', None)
+            ] if e is not None)
+
+        self._check_type(feature_dict.get('type', None))
+
+        # TODO for POI?
+        # type_feature = feature_dict.get('type')
+        # if not type_feature == 'Feature':
+        #     raise GeocoderServiceError(
+        #         "Expected a Feature as a result but received a %s" % type_feature
+        #     )
+
+        # Parse each resource.
+        latitude = float(feature_dict.pop('latitude'))
+        longitude = float(feature_dict.pop('longitude'))
+
+        return Location(placename, (latitude, longitude), feature_dict)
+
+    def _parse_csv(self, file):
+        try:
+            mapping = None
+            with open(file, 'r') as f:
+                reader = csv.reader(f)
+                for row in reader:
+                    if mapping is None:
+                        # use the header row to analyze the mapping
+                        mapping = {column: i for i, column in enumerate(row)}
+                        continue
+                    # parse the feature
+                    yield self._parse_feature_csv(row, mapping)
+                    # TODO multiple results?
+        finally:
+            self.logger.debug("deleting CSV file after parsing: %s", file)
+            os.unlink(file)
 
     def reverse(
             self,
@@ -257,7 +432,7 @@ class IGNFrance(Geocoder):
             params["limit"] = limit
 
         url = "?".join((self.reverse_api, urlencode(params)))
-        logger.debug("%s.reverse: %s", self.__class__.__name__, url)
+        self.logger.debug(".reverse: %s", url)
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
 
@@ -271,9 +446,9 @@ class IGNFrance(Geocoder):
             )
         return indexes
 
-    def _check_type(self, type):
-        if type not in {'housenumber', 'street', 'locality', 'municipality'}:
-            raise GeocoderQueryError("invalid type %s")
+    def _check_type(self, _type):
+        if _type not in {'housenumber', 'street', 'locality', 'municipality', None}:
+            raise GeocoderQueryError("invalid type %s" % _type)
 
     def _request_raw_content(self, url, callback, *, timeout):
         """

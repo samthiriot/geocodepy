@@ -231,10 +231,48 @@ def patch_adapter(
                 assert res is not None
                 return res
 
+            async def _wrapped_post_csv(self, url, do_request):
+                res = None
+                gen = self._retries(url)
+                while True:
+                    try:
+                        next(gen)
+                    except StopIteration:
+                        break
+                    assert res is None
+                    try:
+                        res = do_request()
+                    except Exception as e:
+                        error_wait_seconds = gen.throw(e)
+                        sleep(error_wait_seconds)
+                    else:
+                        assert gen.send(res) is None
+                assert res is not None
+                return res
+
     else:
 
         class AdapterProxy(BaseAdapterProxy, BaseSyncAdapter):
             def _wrapped_get(self, url, do_request):
+                res = None
+                gen = self._retries(url)
+                while True:
+                    try:
+                        next(gen)
+                    except StopIteration:
+                        break
+                    assert res is None
+                    try:
+                        res = do_request()
+                    except Exception as e:
+                        error_wait_seconds = gen.throw(e)
+                        sleep(error_wait_seconds)
+                    else:
+                        assert gen.send(res) is None
+                assert res is not None
+                return res
+
+            def _wrapped_post_csv(self, url, do_request):
                 res = None
                 gen = self._retries(url)
                 while True:
@@ -298,6 +336,14 @@ class BaseAdapterProxy:
         return self._wrapped_get(
             url,
             partial(self.adapter.get_text, url, timeout=timeout, headers=headers),
+        )
+
+    def post_csv(self, url, *, data, file, timeout, headers):
+        return self._wrapped_post_csv(
+            url,
+            partial(self.adapter.post_csv, url,
+                    data=data, file=file,
+                    timeout=timeout, headers=headers),
         )
 
     def _retries(self, url):
