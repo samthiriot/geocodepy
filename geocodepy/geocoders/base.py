@@ -510,24 +510,15 @@ class Geocoder:
         timeout = (timeout if timeout is not DEFAULT_SENTINEL
                    else self.timeout)
 
-        # patch the callback for caching
-        def callback_with_cache(result):
-            if data is None:
-                self._store_in_cache(url, result, expire=self.cache_expire)
-            try:
-                return callback(result)
-            except Exception as e:
-                print("error in callback_with_cache", e)
-                raise
-
         try:
+            from_cache = False
+            # search in cache
             result = None if data is not None else self._search_in_cache(url)
-
             if result is not None:
+                from_cache = True
                 # found in cache
                 if result == _CACHE_NORESULT:
                     result = None
-                return callback(result)
             else:
                 # no cache, we need to call the geocoder
                 adapter_call = self._get_adapter_call(is_json, data)
@@ -536,6 +527,16 @@ class Geocoder:
                                           data=data, file=file)
                 else:
                     result = adapter_call(url, timeout=timeout, headers=req_headers)
+
+            # patch the callback for caching
+            def callback_with_cache(result):
+                if data is None and not from_cache:
+                    self._store_in_cache(url, result, expire=self.cache_expire)
+                try:
+                    return callback(result)
+                except Exception as e:
+                    self.logger.error("error in callback_with_cache: %s", e)
+                    raise
 
             if self._run_async:
                 async def fut():
@@ -602,21 +603,6 @@ class Geocoder:
             finally:
                 self.cache.close()
 
-    # def geocode(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
-    #     raise NotImplementedError()
-
-    # def reverse(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
-    #     raise NotImplementedError()
-
-
-class GeocoderWithCSVBatch(Geocoder):
-    """
-    Geocoder subclass that provides CSV batch geocoding support.
-    """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def _write_csv(self, addresses, max_size=1024 * 1024 * 1):
         """
         Write the addresses to a CSV file. Returns file-like objects.
@@ -646,6 +632,13 @@ class GeocoderWithCSVBatch(Geocoder):
                 tmp_file = None
         tmp_file.close()
         yield tmp_file
+
+    # def geocode(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
+    #     raise NotImplementedError()
+
+    # def reverse(self, query, *, exactly_one=True, timeout=DEFAULT_SENTINEL):
+    #     raise NotImplementedError()
+
 
 
 def _format_coordinate(coordinate):

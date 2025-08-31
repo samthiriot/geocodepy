@@ -6,13 +6,13 @@ from functools import partial
 from urllib.parse import urlencode
 
 from geocodepy.exc import GeocoderQueryError, GeocoderServiceError
-from geocodepy.geocoders.base import DEFAULT_SENTINEL, GeocoderWithCSVBatch
+from geocodepy.geocoders.base import DEFAULT_SENTINEL, Geocoder
 from geocodepy.location import Location
 
 __all__ = ("IGNFrance", )
 
 
-class IGNFrance(GeocoderWithCSVBatch):
+class IGNFrance(Geocoder):
     """Geocoder using the IGN France GeoCoder OpenLS API.
 
     Documentation at:

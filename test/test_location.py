@@ -84,7 +84,8 @@ class LocationTestCase(unittest.TestCase):
 
     def test_location_string(self):
         loc = Location(GRAND_CENTRAL_STR, GRAND_CENTRAL_POINT, {})
-        self.assertEqual(str(loc), loc.address)
+        self.assertEqual("(%s, %s) %s" % (loc.latitude, loc.longitude, loc.address),
+                         str(loc))
 
     def test_location_len(self):
         loc = Location(GRAND_CENTRAL_STR, GRAND_CENTRAL_POINT, {})
