@@ -531,7 +531,11 @@ class Geocoder:
             # patch the callback for caching
             def callback_with_cache(result):
                 if data is None and not from_cache:
-                    self._store_in_cache(url, result, expire=self.cache_expire)
+                    try:
+                        self._store_in_cache(url, result, expire=self.cache_expire)
+                    except Exception as e:
+                        self.logger.warning("error when trying to store in cache: %s", e)
+                        raise
                 try:
                     return callback(result)
                 except Exception as e:

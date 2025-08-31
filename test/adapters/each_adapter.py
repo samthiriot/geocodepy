@@ -50,6 +50,9 @@ else:
 
 
 class DummyGeocoder(Geocoder):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, cache=False, cache_expire=0, **kwargs)
+
     def geocode(self, location, *, is_json=False):
         return self._call_geocoder(location, lambda res: res, is_json=is_json)
 
