@@ -1,7 +1,6 @@
 import asyncio
 import csv
 import os
-from typing import override
 import warnings
 from functools import partial
 from urllib.parse import urlencode
@@ -9,7 +8,6 @@ from urllib.parse import urlencode
 from geocodepy.exc import GeocoderQueryError, GeocoderServiceError
 from geocodepy.geocoders.base import DEFAULT_SENTINEL, GeocoderWithCSVBatch
 from geocodepy.location import Location
-from geocodepy.util import logger
 
 __all__ = ("IGNFrance", )
 
@@ -198,7 +196,7 @@ class IGNFrance(GeocoderWithCSVBatch):
 
         url = "?".join((self.geocode_api, urlencode(params)))
 
-        logger.debug("%s.geocode: %s", self.__class__.__name__, url)
+        self.logger.debug("geocode: %s", url)
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
 
@@ -217,7 +215,8 @@ class IGNFrance(GeocoderWithCSVBatch):
                 data={"columns": "query", "indexes": indexes},
             )
         finally:
-            self.logger.debug("deleting CSV file after batch geocoding", tmp_file.name)
+            self.logger.debug("deleting CSV file after batch geocoding: %s",
+                              tmp_file.name)
             os.unlink(tmp_file.name)
         #   "section": "",
         #   "municipalitycode": "",
@@ -257,7 +256,6 @@ class IGNFrance(GeocoderWithCSVBatch):
             data={"columns": "query", "indexes": indexes},
         )
 
-    @override
     def geocode_batch(self, addresses, indexes="address,poi", timeout=60):
         """
         IGN offers a native batch geocoding service. The list of addresses is written in a
@@ -365,7 +363,7 @@ class IGNFrance(GeocoderWithCSVBatch):
                     yield self._parse_feature_csv(row, mapping)
                     # TODO multiple results?
         finally:
-            self.logger.debug("deleting CSV file after parsing", file)
+            self.logger.debug("deleting CSV file after parsing: %s", file)
             os.unlink(file)
 
     def reverse(
@@ -434,7 +432,7 @@ class IGNFrance(GeocoderWithCSVBatch):
             params["limit"] = limit
 
         url = "?".join((self.reverse_api, urlencode(params)))
-        logger.debug("%s.reverse: %s", self.__class__.__name__, url)
+        self.logger.debug(".reverse: %s", url)
         callback = partial(self._parse_json, exactly_one=exactly_one)
         return self._call_geocoder(url, callback, timeout=timeout)
 

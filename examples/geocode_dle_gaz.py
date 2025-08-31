@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.DEBUG)
 # from http.client import HTTPConnection
 # HTTPConnection.debuglevel = 1
 
-sample_size = 10000
+sample_size = 10
 filter_commune = None  # "FONTAINEBLEAU"
 
 res_directory = "/tmp/"
