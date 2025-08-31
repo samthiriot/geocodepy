@@ -324,7 +324,7 @@ class IGNFrance(GeocoderWithCSVBatch):
 
         if feature_dict.pop('status') != 'ok':
             return None
-        
+
         placename = feature_dict.get('label', None)
         # in case of POI, the service does not always return a label
         if placename is None:

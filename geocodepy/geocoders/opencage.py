@@ -80,7 +80,7 @@ class OpenCage(Geocoder):
 
         :param float min_delay_seconds:
             Minimum delay between requests. Default is 1.0, the limitation for free plan.
-            Check the OpenCageData documentation https://opencagedata.com/api#rate-limiting .
+            Check the OpenCage documentation https://opencagedata.com/api#rate-limiting .
 
             .. versionadded:: 2.0
         """

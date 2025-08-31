@@ -393,7 +393,7 @@ class Nominatim(Geocoder):
         latitude = place.pop('lat', None)
         longitude = place.pop('lon', None)
         placename = place.pop('display_name', None)
-        
+
         if latitude is not None and longitude is not None:
             latitude = float(latitude)
             longitude = float(longitude)

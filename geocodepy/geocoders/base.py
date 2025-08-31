@@ -256,7 +256,7 @@ class Geocoder:
             min_delay_seconds=None
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
-        
+
         self.scheme = scheme or options.default_scheme
         if self.scheme not in ('http', 'https'):
             raise ConfigurationError(
@@ -363,10 +363,6 @@ class Geocoder:
             The minimum delay between each geocoding request.
             If not provided, the geocoder will not wait between requests.
 
-        :param progress_callback:
-            A callback function that will be called with the progress of the geocoding.
-            The callback function will be called with the number of addresses geocoded and the total number of addresses.
-
         Additional parameters will be bassed to the geocoder.geocode method.
         """
         results = []
@@ -376,7 +372,7 @@ class Geocoder:
                 result = self.geocode(
                     address, exactly_one=True, timeout=timeout, **kwargs)
                 print(".", end='')
-            except Exception as e:
+            except Exception:
                 # print("error geocoding", address, e)
                 print("E", end='')
             sys.stdout.flush()
